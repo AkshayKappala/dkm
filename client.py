@@ -1,71 +1,55 @@
 import socket
 import os
+import struct
 
-# Define server address
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 
-# Constant string as the KEM public key (for demo)
-server_public_key = "server_public_key"
+# Directory containing files to send
+sent_directory = "sent"
 
-# Constant symmetric key for image encryption/decryption (for demo)
-symmetric_key = "symmetric_key_123456"
-
-# Simulate encrypting the image with the symmetric key (mock operation)
-def encrypt_image(image_data, symmetric_key):
-    encrypted_image = bytearray([b ^ ord(symmetric_key[i % len(symmetric_key)]) for i, b in enumerate(image_data)])
-    return encrypted_image
-
-# Simulate encapsulating the symmetric key (mock operation)
-def encapsulate_symmetric_key(symmetric_key, server_public_key):
-    if server_public_key == "server_public_key":
-        return "encapsulated_symmetric_key"  # Mock encapsulation
-    else:
-        return ""
-
-# Directory containing images
-image_directory = "images"  # Change this to your directory with images
-
-# Create a socket and connect to the server
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 try:
     client_socket.connect(SERVER_ADDRESS)
-    
-    # Receive the server's public key
     server_public_key_pem = client_socket.recv(1024).decode()
     print(f"Received server public key: {server_public_key_pem}")
-    
-    # Generate a symmetric key (for demo, we use the constant one)
-    symmetric_key = "symmetric_key_123456"
-    
-    # Encapsulate the symmetric key using the server's public key
-    encapsulated_key = encapsulate_symmetric_key(symmetric_key, server_public_key)
-    
-    # Send the encapsulated key to the server
+
+    encapsulated_key = "encapsulated_symmetric_key"  # Mock
     client_socket.sendall(encapsulated_key.encode())
 
-    # Iterate over the images in the directory and send each one
-    for filename in os.listdir(image_directory):
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Process image files only
-            file_path = os.path.join(image_directory, filename)
-            
+    # Iterate over files in the sent directory
+    for filename in os.listdir(sent_directory):
+        file_path = os.path.join(sent_directory, filename)
+
+        # Check if it's a file (not a subdirectory)
+        if os.path.isfile(file_path):
             try:
-                with open(file_path, 'rb') as img_file:
-                    image_data = img_file.read()
-            
-                # Encrypt the image using the symmetric key
-                encrypted_image = encrypt_image(image_data, symmetric_key)
+                with open(file_path, 'rb') as file_to_send:
+                    data = file_to_send.read()
 
-                # Send the encrypted image to the server
-                client_socket.sendall(encrypted_image)
-                print(f"Sent encrypted image: {filename}")
+                # Prepend the filename and its length
+                filename_bytes = filename.encode()
+                filename_length = len(filename_bytes)
+
+                # Prepend the length of the filename
+                client_socket.sendall(struct.pack('>I', filename_length))
+                # Send the filename
+                client_socket.sendall(filename_bytes)
+
+                # Prepend the length of the data
+                data_length = len(data)
+                client_socket.sendall(struct.pack('>I', data_length))
+                # Send the data
+                client_socket.sendall(data)
+
+                print(f"Sent file: {filename}")
+
             except Exception as e:
-                print(f"Error reading or sending image {filename}: {e}")
+                print(f"Error reading or sending file {filename}: {e}")
 
-    # Signal the end of the images
-    client_socket.sendall(b'')  # Send an empty message to indicate no more images
+    # Signal the end of the files with a data length of 0
+    client_socket.sendall(struct.pack('>I', 0))
 
-    # Receive the new public key from the server for key update
     server_public_key_pem = client_socket.recv(1024).decode()
     print(f"Received new server public key: {server_public_key_pem}")
 
