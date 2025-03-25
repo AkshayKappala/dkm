@@ -115,14 +115,28 @@ try:
     input("File transfer complete. Press Enter to close the connection...")
     
     # We can optionally try to receive any closing message from the server
+    print("Closing connection...")
     try:
         client_socket.settimeout(2.0)
-        client_socket.recv(1024)
+        close_msg = client_socket.recv(1024)
+        if close_msg == b'CLOSE':
+            print("Received close signal from server")
+            # Optionally send acknowledgment
+            try:
+                client_socket.sendall(b'ACK')
+            except:
+                pass  # It's okay if this fails
     except:
         pass  # No need to log anything here
 
 except Exception as e:
     print(f"Error during client communication: {e}")
 finally:
-    client_socket.close()
-    print("Connection closed.")
+    # Ensure proper socket cleanup
+    try:
+        if client_socket:
+            client_socket.shutdown(socket.SHUT_RDWR)
+            client_socket.close()
+            print("Connection closed.")
+    except:
+        pass  # Socket might already be closed

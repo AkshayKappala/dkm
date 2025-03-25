@@ -137,15 +137,35 @@ try:
     # Wait for user input before closing connection
     input("File transfer complete. Press Enter to close the connection...")
     
-    # Send a termination signal to client (optional)
+    # Send a termination signal to client
+    print("Closing connection...")
     try:
         connection.sendall(b'CLOSE')
+        # Give the client time to process and close
+        connection.settimeout(3.0)
+        try:
+            # Try to receive any final acknowledgment
+            connection.recv(1024)
+        except socket.timeout:
+            pass  # It's okay if we don't receive anything
     except:
-        pass  # Client might have already closed the connection
+        print("Client may have already disconnected")
 
 except Exception as e:
     print(f"Error during server communication: {e}")
 finally:
-    connection.close()
-    server_socket.close()
-    print("Connection closed.")
+    # Ensure proper socket cleanup
+    try:
+        if connection:
+            connection.shutdown(socket.SHUT_RDWR)
+            connection.close()
+            print("Connection closed.")
+    except:
+        pass  # Connection might already be closed
+    
+    try:
+        if server_socket:
+            server_socket.close()
+            print("Server socket closed.")
+    except:
+        pass  # Socket might already be closed
