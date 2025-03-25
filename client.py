@@ -24,35 +24,42 @@ try:
     client_socket.sendall(encapsulated_key)
     print(f"Sent encapsulated key: {encapsulated_key}")
 
-    # Iterate over files in the sent directory
+    # Get all files and sort them by name
+    files_to_send = []
     for filename in os.listdir(sent_directory):
         file_path = os.path.join(sent_directory, filename)
-
-        # Check if it's a file (not a subdirectory)
         if os.path.isfile(file_path):
-            try:
-                with open(file_path, 'rb') as file_to_send:
-                    data = file_to_send.read()
+            files_to_send.append(filename)
+    
+    # Sort files alphabetically
+    files_to_send.sort()
+    
+    # Iterate over files in sorted order
+    for filename in files_to_send:
+        file_path = os.path.join(sent_directory, filename)
+        try:
+            with open(file_path, 'rb') as file_to_send:
+                data = file_to_send.read()
 
-                # Prepend the filename and its length
-                filename_bytes = filename.encode()
-                filename_length = len(filename_bytes)
+            # Prepend the filename and its length
+            filename_bytes = filename.encode()
+            filename_length = len(filename_bytes)
 
-                # Prepend the length of the filename
-                client_socket.sendall(struct.pack('>I', filename_length))
-                # Send the filename
-                client_socket.sendall(filename_bytes)
+            # Prepend the length of the filename
+            client_socket.sendall(struct.pack('>I', filename_length))
+            # Send the filename
+            client_socket.sendall(filename_bytes)
 
-                # Prepend the length of the data
-                data_length = len(data)
-                client_socket.sendall(struct.pack('>I', data_length))
-                # Send the data
-                client_socket.sendall(data)
+            # Prepend the length of the data
+            data_length = len(data)
+            client_socket.sendall(struct.pack('>I', data_length))
+            # Send the data
+            client_socket.sendall(data)
 
-                print(f"Sent file: {filename}")
+            print(f"Sent file: {filename}")
 
-            except Exception as e:
-                print(f"Error sending file {filename}: {e}")
+        except Exception as e:
+            print(f"Error sending file {filename}: {e}")
 
     # Signal the end of the files with a data length of 0
     client_socket.sendall(struct.pack('>I', 0))
