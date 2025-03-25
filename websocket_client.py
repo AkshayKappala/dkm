@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class WebSocketClient:
-    def __init__(self, uri="ws://192.168.232.10:8765"):
+    def __init__(self, uri="ws://192.168.141.10:8765"):  # Updated to match the server's IP address
         self.uri = uri
         self.websocket = None
         self.running = False
