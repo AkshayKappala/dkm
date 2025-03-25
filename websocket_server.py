@@ -19,12 +19,13 @@ class WebSocketServer:
         self.host = host
         self.port = port
         self.clients = {}  # {websocket: client_name}
+        self.client_info = {}  # {websocket: {'name': client_name, 'ip': client_ip}}
         self.next_client_id = 1
         self.available_ids = deque()  # Recycled client IDs
         self.lock = asyncio.Lock()  # For thread-safe client management
         
     async def register_client(self, websocket):
-        """Register a new client with a unique name."""
+        """Register a new client with a unique name and log their IP address."""
         async with self.lock:
             if self.available_ids:
                 # Reuse available IDs from disconnected clients
@@ -34,11 +35,21 @@ class WebSocketServer:
                 self.next_client_id += 1
                 
             client_name = f"client{client_id}"
+            
+            # Get client IP address
+            client_ip = websocket.remote_address[0] if websocket.remote_address else "unknown"
+            
+            # Store client information
             self.clients[websocket] = client_name
-            logger.info(f"New client connected: {client_name}")
+            self.client_info[websocket] = {
+                'name': client_name,
+                'ip': client_ip
+            }
+            
+            logger.info(f"New client connected: {client_name} from IP: {client_ip}")
             
             # Notify everyone about the new client
-            await self.broadcast(f"SERVER: {client_name} has joined. {len(self.clients)} clients connected.")
+            await self.broadcast(f"SERVER: {client_name} has joined from IP {client_ip}. {len(self.clients)} clients connected.")
             return client_name
 
     async def unregister_client(self, websocket):
@@ -46,6 +57,8 @@ class WebSocketServer:
         async with self.lock:
             if websocket in self.clients:
                 client_name = self.clients[websocket]
+                client_ip = self.client_info.get(websocket, {}).get('ip', 'unknown')
+                
                 # Extract client ID number and add back to available IDs
                 try:
                     client_id = int(client_name.replace("client", ""))
@@ -55,10 +68,13 @@ class WebSocketServer:
                 
                 # Remove from active clients
                 del self.clients[websocket]
-                logger.info(f"Client disconnected: {client_name}")
+                if websocket in self.client_info:
+                    del self.client_info[websocket]
+                
+                logger.info(f"Client disconnected: {client_name} from IP: {client_ip}")
                 
                 # Notify remaining clients
-                await self.broadcast(f"SERVER: {client_name} has left. {len(self.clients)} clients connected.")
+                await self.broadcast(f"SERVER: {client_name} from IP {client_ip} has left. {len(self.clients)} clients connected.")
 
     async def broadcast(self, message):
         """Send a message to all connected clients."""
@@ -89,14 +105,15 @@ class WebSocketServer:
         
         try:
             # Send welcome message to the new client
-            await websocket.send(f"Welcome! You are {client_name}")
+            client_ip = websocket.remote_address[0] if websocket.remote_address else "unknown"
+            await websocket.send(f"Welcome! You are {client_name} connecting from IP {client_ip}")
             
             # Handle incoming messages
             async for message in websocket:
-                logger.debug(f"Message from {client_name}: {message}")
+                logger.debug(f"Message from {client_name} ({client_ip}): {message}")
                 
-                # Broadcast the message to all clients with sender's name
-                await self.broadcast(f"{client_name}: {message}")
+                # Broadcast the message to all clients with sender's name and IP
+                await self.broadcast(f"{client_name} ({client_ip}): {message}")
                 
         except websockets.exceptions.ConnectionClosed:
             logger.info(f"Connection closed for {client_name}")
