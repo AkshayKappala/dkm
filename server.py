@@ -21,11 +21,13 @@ except Exception as e:
     exit(1)
 
 try:
-    server_public_key = "server_public_key" # Mock
+    server_public_key = "server_public_key"  # Mock
     connection.sendall(server_public_key.encode())
 
     encapsulated_key = connection.recv(1024)  # Receive as bytes, not decoded
-    if encapsulated_key == b"encapsulated_symmetric_key": # Mock, compare bytes
+    print(f"Received encapsulated key: {encapsulated_key}")
+
+    if encapsulated_key == b"encapsulated_symmetric_key":  # Mock, compare bytes
         print("Symmetric key successfully received and decapsulated.")
     else:
         print("Failed to decapsulate symmetric key.")
@@ -85,13 +87,13 @@ try:
                 print(f"Received and saved file: {filename}")
             except Exception as e:
                 print(f"Error saving file {filename}: {e}")
-                break # Stop if saving fails
+                break  # Stop if saving fails
 
         except Exception as e:
             print(f"General error receiving file: {e}")
             break
 
-    new_server_public_key = "new_server_public_key" # Mock
+    new_server_public_key = "new_server_public_key"  # Mock
     connection.sendall(new_server_public_key.encode())
 
 except Exception as e:
