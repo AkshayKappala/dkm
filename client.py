@@ -23,6 +23,12 @@ try:
     # Send the key
     client_socket.sendall(encapsulated_key)
     print(f"Sent encapsulated key: {encapsulated_key}")
+    
+    # Wait for initial server ready signal
+    response = client_socket.recv(5)  # "READY" is 5 bytes
+    if response != b"READY":
+        print("Server not ready to receive files, aborting.")
+        raise Exception("Server not ready")
 
     # Get all files and sort them by name
     files_to_send = []
@@ -57,9 +63,16 @@ try:
             client_socket.sendall(data)
 
             print(f"Sent file: {filename}")
+            
+            # Wait for server confirmation before sending next file
+            response = client_socket.recv(5)  # "READY" is 5 bytes
+            if response != b"READY":
+                print("Server not ready for next file, aborting.")
+                break
 
         except Exception as e:
             print(f"Error sending file {filename}: {e}")
+            break
 
     # Signal the end of the files with a data length of 0
     client_socket.sendall(struct.pack('>I', 0))

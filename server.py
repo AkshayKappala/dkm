@@ -34,6 +34,8 @@ try:
 
     if encapsulated_key == b"encapsulated_symmetric_key":  # Mock, compare bytes
         print("Symmetric key successfully received.")
+        # Send initial ready signal to the client
+        connection.sendall(b"READY")
     else:
         print("Failed to receive symmetric key.")
         connection.close()
@@ -84,6 +86,10 @@ try:
                     received_file.write(received_data)
 
                 print(f"Received file: {filename}")
+                
+                # Send confirmation to client that we're ready for next file
+                connection.sendall(b"READY")
+                
             except Exception as e:
                 print(f"Error saving file {filename}: {e}")
                 break  # Stop if saving fails
