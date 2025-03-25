@@ -33,12 +33,15 @@ try:
     encapsulated_key = connection.recv(key_length)
     print(f"Received encapsulated key: {encapsulated_key}")
 
-    if encapsulated_key == b"encapsulated_symmetric_key":  # Mock, compare bytes
+    # Update check to match client's new key format with counter
+    expected_key = f"encapsulated_symmetric_key_{key_counter}".encode()
+    if encapsulated_key == expected_key:
         print("Symmetric key successfully received.")
         # Send initial ready signal to the client
         connection.sendall(b"READY")
     else:
         print("Failed to receive symmetric key.")
+        print(f"Expected: {expected_key}, Received: {encapsulated_key}")
         connection.close()
         exit(1)
 
