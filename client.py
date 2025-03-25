@@ -14,8 +14,9 @@ try:
     server_public_key_pem = client_socket.recv(1024).decode()
     print(f"Received server public key: {server_public_key_pem}")
 
-    encapsulated_key = "encapsulated_symmetric_key"  # Mock
-    client_socket.sendall(encapsulated_key.encode())
+    encapsulated_key = b"encapsulated_symmetric_key"  # Mock, send as bytes
+    client_socket.sendall(encapsulated_key)
+    print(f"Sent encapsulated key: {encapsulated_key}")
 
     # Iterate over files in the sent directory
     for filename in os.listdir(sent_directory):
