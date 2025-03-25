@@ -24,8 +24,8 @@ try:
     server_public_key = "server_public_key" # Mock
     connection.sendall(server_public_key.encode())
 
-    encapsulated_key = connection.recv(1024).decode()
-    if encapsulated_key == "encapsulated_symmetric_key": # Mock
+    encapsulated_key = connection.recv(1024)  # Receive as bytes, not decoded
+    if encapsulated_key == b"encapsulated_symmetric_key": # Mock, compare bytes
         print("Symmetric key successfully received and decapsulated.")
     else:
         print("Failed to decapsulate symmetric key.")
