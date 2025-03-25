@@ -24,7 +24,13 @@ try:
     server_public_key = "server_public_key"  # Mock
     connection.sendall(server_public_key.encode())
 
-    encapsulated_key = connection.recv(1024)  # Receive as bytes, not decoded
+    # Receive the key length first
+    key_length_bytes = connection.recv(4)
+    key_length = struct.unpack('>I', key_length_bytes)[0]
+    print(f"Expecting encapsulated key of length: {key_length}")
+    
+    # Receive the key with the exact length
+    encapsulated_key = connection.recv(key_length)
     print(f"Received encapsulated key: {encapsulated_key}")
 
     if encapsulated_key == b"encapsulated_symmetric_key":  # Mock, compare bytes

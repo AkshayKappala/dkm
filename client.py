@@ -15,6 +15,12 @@ try:
     print(f"Received server public key: {server_public_key_pem}")
 
     encapsulated_key = b"encapsulated_symmetric_key"  # Mock, send as bytes
+    
+    # Send the key length first
+    key_length = len(encapsulated_key)
+    client_socket.sendall(struct.pack('>I', key_length))
+    
+    # Send the key
     client_socket.sendall(encapsulated_key)
     print(f"Sent encapsulated key: {encapsulated_key}")
 
