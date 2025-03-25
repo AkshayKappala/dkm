@@ -17,10 +17,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class FileTransferClient:
-    def __init__(self, cdir_path="cdir", server_uri="ws://192.168.141.10:8765"):
+    def __init__(self, cdir_path="cdir", ws_client=None, server_uri="ws://192.168.141.10:8765"):
         """Initialize the file transfer client."""
         self.cdir_path = cdir_path
-        self.ws_client = WebSocketClient(uri=server_uri)
+        self.ws_client = ws_client or WebSocketClient(uri=server_uri)
+        self.connected_by_self = ws_client is None
         
         # Ensure cdir exists
         if not os.path.exists(self.cdir_path):
@@ -28,15 +29,14 @@ class FileTransferClient:
             logger.info(f"Created directory: {self.cdir_path}")
     
     async def send_files(self):
-        """Send all files from cdir to the server."""
+        """Send all files from cdir to the server using an existing connection."""
         if not os.path.isdir(self.cdir_path):
             logger.error(f"Directory not found: {self.cdir_path}")
             return False
         
-        # Connect to the WebSocket server
-        connected = await self.ws_client.connect()
-        if not connected:
-            logger.error("Failed to connect to WebSocket server")
+        # Check if WebSocket is connected
+        if not self.ws_client.running or not self.ws_client.websocket:
+            logger.error("WebSocket is not connected")
             return False
         
         try:
@@ -61,9 +61,6 @@ class FileTransferClient:
         except Exception as e:
             logger.error(f"Error during file transfer: {e}")
             return False
-        finally:
-            # Always disconnect when done
-            await self.ws_client.disconnect()
     
     async def send_file(self, file_path):
         """Send a single file to the server."""
@@ -98,17 +95,61 @@ class FileTransferClient:
             logger.error(f"Failed to send file {file_path}: {e}")
             return False
 
+    async def run(self):
+        """Run the file transfer client with connection handling."""
+        if self.connected_by_self:
+            # Only connect if we created the WebSocket client
+            connected = await self.ws_client.connect()
+            if not connected:
+                logger.error("Failed to connect to WebSocket server")
+                return False
+        
+        # Send files using the existing connection
+        result = await self.send_files()
+        
+        # Note: We don't disconnect here, as the connection should stay open
+        
+        return result
+
 async def main():
     """Main function to run the file transfer."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Send files from cdir to server\'s rdir')
     parser.add_argument('--cdir', default='cdir', help='Client directory containing files to send')
     parser.add_argument('--server', default='ws://192.168.141.10:8765', help='WebSocket server URI')
+    parser.add_argument('--keep-running', action='store_true', help='Keep the connection running after file transfer')
     args = parser.parse_args()
     
-    # Create and run file transfer client
-    file_client = FileTransferClient(cdir_path=args.cdir, server_uri=args.server)
-    await file_client.send_files()
+    # Create WebSocket client
+    ws_client = WebSocketClient(uri=args.server)
+    
+    # Connect to the server
+    connected = await ws_client.connect()
+    if not connected:
+        logger.error("Failed to connect to WebSocket server")
+        return
+    
+    try:
+        # Create file transfer client that uses the existing WebSocket connection
+        file_client = FileTransferClient(cdir_path=args.cdir, ws_client=ws_client)
+        
+        # Send files using the existing connection
+        await file_client.send_files()
+        
+        # Keep the connection open if requested
+        if args.keep_running:
+            logger.info("Keeping connection open. Press Ctrl+C to exit.")
+            while True:
+                await asyncio.sleep(1)
+                
+    except KeyboardInterrupt:
+        logger.info("File transfer interrupted by user")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+    finally:
+        if not args.keep_running:
+            # Only disconnect if we're not keeping the connection running
+            await ws_client.disconnect()
 
 if __name__ == "__main__":
     try:
