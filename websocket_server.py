@@ -125,8 +125,8 @@ class WebSocketServer:
             logger.error(f"Server error: {e}")
 
 if __name__ == "__main__":
-    # Set the specific IP address 192.168.232.10
-    server = WebSocketServer(host="192.168.232.10", port=8765)
+    # Set the specific IP address 192.168.141.10
+    server = WebSocketServer(host="192.168.141.10", port=8765)
     try:
         # Start the server with proper shutdown handling
         loop = asyncio.get_event_loop()
