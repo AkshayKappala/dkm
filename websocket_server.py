@@ -25,7 +25,7 @@ class WebSocketServer:
         self.lock = asyncio.Lock()  # For thread-safe client management
         
     async def register_client(self, websocket):
-        """Register a new client with a unique name and log their IP address."""
+        """Register a new client with a unique name."""
         async with self.lock:
             if self.available_ids:
                 # Reuse available IDs from disconnected clients
@@ -46,10 +46,8 @@ class WebSocketServer:
                 'ip': client_ip
             }
             
-            logger.info(f"New client connected: {client_name} from IP: {client_ip}")
+            logger.info(f"New client connected: {client_name}")
             
-            # Notify everyone about the new client
-            await self.broadcast(f"SERVER: {client_name} has joined from IP {client_ip}. {len(self.clients)} clients connected.")
             return client_name
 
     async def unregister_client(self, websocket):
@@ -57,7 +55,6 @@ class WebSocketServer:
         async with self.lock:
             if websocket in self.clients:
                 client_name = self.clients[websocket]
-                client_ip = self.client_info.get(websocket, {}).get('ip', 'unknown')
                 
                 # Extract client ID number and add back to available IDs
                 try:
@@ -71,10 +68,7 @@ class WebSocketServer:
                 if websocket in self.client_info:
                     del self.client_info[websocket]
                 
-                logger.info(f"Client disconnected: {client_name} from IP: {client_ip}")
-                
-                # Notify remaining clients
-                await self.broadcast(f"SERVER: {client_name} from IP {client_ip} has left. {len(self.clients)} clients connected.")
+                logger.info(f"Client disconnected: {client_name}")
 
     async def broadcast(self, message):
         """Send a message to all connected clients."""
@@ -95,7 +89,7 @@ class WebSocketServer:
         try:
             await websocket.send(message)
         except websockets.exceptions.ConnectionClosed:
-            logger.debug(f"Failed to send message - connection already closed")
+            pass
         except Exception as e:
             logger.error(f"Error sending message: {e}")
 
@@ -105,22 +99,23 @@ class WebSocketServer:
         
         try:
             # Send welcome message to the new client
-            client_ip = websocket.remote_address[0] if websocket.remote_address else "unknown"
-            await websocket.send(f"Welcome! You are {client_name} connecting from IP {client_ip}")
+            await websocket.send(f"Welcome! You are {client_name}")
             
             # Handle incoming messages
             async for message in websocket:
-                logger.debug(f"Message from {client_name} ({client_ip}): {message}")
-                
-                # Broadcast the message to all clients with sender's name and IP
-                await self.broadcast(f"{client_name} ({client_ip}): {message}")
+                # Check if it's binary data
+                if isinstance(message, bytes):
+                    # Binary data is handled by the file_handler patch
+                    pass
+                else:
+                    # Regular text message
+                    await self.broadcast(f"{client_name}: {message}")
                 
         except websockets.exceptions.ConnectionClosed:
-            logger.info(f"Connection closed for {client_name}")
+            pass
         except Exception as e:
-            logger.error(f"Error handling client {client_name}: {e}")
+            logger.error(f"Error: {e}")
         finally:
-            # Always ensure client is unregistered on disconnect
             await self.unregister_client(websocket)
 
     async def start_server(self):
@@ -130,8 +125,8 @@ class WebSocketServer:
                 self.handle_client, 
                 self.host, 
                 self.port,
-                ping_interval=30,  # Send ping every 30 seconds
-                ping_timeout=10    # Wait 10 seconds for pong response
+                ping_interval=30,
+                ping_timeout=10
             )
             
             logger.info(f"WebSocket server started on ws://{self.host}:{self.port}")

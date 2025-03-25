@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import json
-import base64
 import asyncio
 import logging
 import argparse
@@ -36,7 +34,7 @@ class FileTransferClient:
         
         # Check if WebSocket is connected
         if not self.ws_client.running or not self.ws_client.websocket:
-            logger.error("WebSocket is not connected")
+            logger.error("No active connection")
             return False
         
         try:
@@ -69,22 +67,19 @@ class FileTransferClient:
             with open(file_path, 'rb') as f:
                 file_content = f.read()
             
-            # Encode file content as base64
-            content_b64 = base64.b64encode(file_content).decode('utf-8')
-            
-            # Create file transfer payload
+            # Create file transfer header
             filename = os.path.basename(file_path)
-            file_data = {
-                "filename": filename,
-                "content": content_b64
-            }
             
-            # Create file transfer message
-            message = f"FILE_TRANSFER:{json.dumps(file_data)}"
+            # Format: FILE_BINARY:<filename>:<data>
+            # Send filename as header followed by binary content
+            header = f"FILE_BINARY:{filename}"
             
-            # Send file
+            # Send file header
             logger.info(f"Sending file: {filename} ({len(file_content)} bytes)")
-            await self.ws_client.send_message(message)
+            await self.ws_client.send_message(header)
+            
+            # Send binary content
+            await self.ws_client.send_binary(file_content)
             
             # Small delay to avoid overwhelming the server
             await asyncio.sleep(0.5)
@@ -120,14 +115,20 @@ async def main():
     parser.add_argument('--keep-running', action='store_true', help='Keep the connection running after file transfer')
     args = parser.parse_args()
     
-    # Create WebSocket client
-    ws_client = WebSocketClient(uri=args.server)
+    # Check for existing connection
+    from websocket_client import get_active_connection
+    ws_client = get_active_connection()
     
-    # Connect to the server
-    connected = await ws_client.connect()
-    if not connected:
-        logger.error("Failed to connect to WebSocket server")
-        return
+    if not ws_client:
+        # No active connection, create a new one if possible
+        logger.info("No active connection found, creating new connection")
+        ws_client = WebSocketClient(uri=args.server)
+        connected = await ws_client.connect()
+        if not connected:
+            logger.error("Failed to connect to WebSocket server")
+            return
+    else:
+        logger.info("Using existing WebSocket connection")
     
     try:
         # Create file transfer client that uses the existing WebSocket connection
@@ -143,18 +144,18 @@ async def main():
                 await asyncio.sleep(1)
                 
     except KeyboardInterrupt:
-        logger.info("File transfer interrupted by user")
+        logger.info("File transfer interrupted")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Error: {e}")
     finally:
-        if not args.keep_running:
-            # Only disconnect if we're not keeping the connection running
+        if not args.keep_running and ws_client and ws_client.connected_by_main:
+            # Only disconnect if we created the connection
             await ws_client.disconnect()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("File transfer interrupted by user")
+        logger.info("File transfer interrupted")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Error: {e}")

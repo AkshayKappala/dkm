@@ -15,6 +15,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global variable to track active connection
+_active_connection = None
+
+def get_active_connection():
+    """Return the active WebSocket client connection if one exists."""
+    global _active_connection
+    if _active_connection and _active_connection.running:
+        return _active_connection
+    return None
+
 class WebSocketClient:
     def __init__(self, uri="ws://192.168.141.10:8765"):  # Updated to match the server's IP address
         self.uri = uri
@@ -22,9 +32,11 @@ class WebSocketClient:
         self.running = False
         self.reconnect_delay = 1  # Start with 1 second delay for reconnection attempts
         self.max_reconnect_delay = 30  # Max 30 seconds between reconnection attempts
+        self.connected_by_main = False
         
     async def connect(self):
         """Establish connection to the WebSocket server."""
+        global _active_connection
         try:
             self.websocket = await websockets.connect(
                 self.uri,
@@ -33,6 +45,8 @@ class WebSocketClient:
             )
             self.running = True
             self.reconnect_delay = 1  # Reset reconnect delay after successful connection
+            self.connected_by_main = True
+            _active_connection = self
             logger.info(f"Connected to {self.uri}")
             return True
         except Exception as e:
@@ -40,7 +54,7 @@ class WebSocketClient:
             return False
             
     async def send_message(self, message):
-        """Send a message to the server."""
+        """Send a text message to the server."""
         if not self.websocket or not self.running:
             logger.error("Cannot send message - not connected")
             return False
@@ -57,6 +71,23 @@ class WebSocketClient:
             logger.error(f"Error sending message: {e}")
             return False
     
+    async def send_binary(self, binary_data):
+        """Send binary data to the server."""
+        if not self.websocket or not self.running:
+            logger.error("Cannot send binary data - not connected")
+            return False
+            
+        try:
+            await self.websocket.send(binary_data)
+            return True
+        except websockets.exceptions.ConnectionClosed:
+            logger.warning("Connection closed while sending binary data")
+            self.running = False
+            return False
+        except Exception as e:
+            logger.error(f"Error sending binary data: {e}")
+            return False
+    
     async def receive_messages(self):
         """Receive and process messages from the server."""
         if not self.websocket:
@@ -66,7 +97,10 @@ class WebSocketClient:
         try:
             while self.running:
                 message = await self.websocket.recv()
-                logger.info(f"Received: {message}")
+                if isinstance(message, bytes):
+                    logger.info(f"Received binary data: {len(message)} bytes")
+                else:
+                    logger.info(f"Received: {message}")
                 # Here you can add custom message handling logic
                 
         except websockets.exceptions.ConnectionClosed:
@@ -81,9 +115,12 @@ class WebSocketClient:
     
     async def disconnect(self):
         """Disconnect from the WebSocket server."""
+        global _active_connection
         if self.websocket:
             try:
                 self.running = False
+                if _active_connection == self:
+                    _active_connection = None
                 await self.websocket.close()
                 logger.info("Disconnected from server")
             except Exception as e:
