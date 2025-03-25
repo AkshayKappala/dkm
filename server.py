@@ -21,7 +21,8 @@ except Exception as e:
     exit(1)
 
 try:
-    server_public_key = "server_public_key"  # Mock
+    key_counter = 1  # Initialize key counter
+    server_public_key = f"server_public_key_{key_counter}"  # Mock
     connection.sendall(server_public_key.encode())
 
     # Receive the key length first
@@ -93,9 +94,10 @@ try:
                 
                 # Check if we need to rotate keys
                 if files_received % key_rotation_threshold == 0:
+                    key_counter += 1  # Increment key counter
                     # Generate and send new key
-                    new_server_public_key = f"new_server_public_key_{files_received}"  # Mock
-                    print(f"Rotating keys after {files_received} files")
+                    new_server_public_key = f"server_public_key_{key_counter}"  # Mock with counter
+                    print(f"Rotating keys after {files_received} files - New key: {new_server_public_key}")
                     # Send key rotation signal
                     connection.sendall(b"NEWKEY")
                     # Send the new key
@@ -107,7 +109,7 @@ try:
                     
                     # Receive the new encapsulated key
                     new_encapsulated_key = connection.recv(key_length)
-                    print(f"Received new encapsulated key: {new_encapsulated_key}")
+                    print(f"Received encapsulated key {key_counter}: {new_encapsulated_key}")
                     
                     # Send ready signal after key rotation is complete
                     connection.sendall(b"READY")
@@ -124,7 +126,9 @@ try:
             break
 
     # When all files are sent, send the final key update
-    final_server_public_key = "final_server_public_key"  # Mock
+    key_counter += 1  # Increment for final key
+    final_server_public_key = f"server_public_key_{key_counter}"  # Mock with counter
+    print(f"Sending final key: {final_server_public_key}")
     connection.sendall(final_server_public_key.encode())
     
     # Wait for user input before closing connection

@@ -12,9 +12,11 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     client_socket.connect(SERVER_ADDRESS)
     server_public_key_pem = client_socket.recv(1024).decode()
-    print("Received server public key")
+    print(f"Received server public key: {server_public_key_pem}")
+    
+    key_counter = 1  # Initialize key counter
 
-    encapsulated_key = b"encapsulated_symmetric_key"  # Mock, send as bytes
+    encapsulated_key = f"encapsulated_symmetric_key_{key_counter}".encode()  # Mock with counter
     
     # Send the key length first
     key_length = len(encapsulated_key)
@@ -22,7 +24,7 @@ try:
     
     # Send the key
     client_socket.sendall(encapsulated_key)
-    print(f"Sent encapsulated key: {encapsulated_key}")
+    print(f"Sent encapsulated key {key_counter}: {encapsulated_key}")
     
     # Wait for initial server ready signal
     response = client_socket.recv(5)  # "READY" is 5 bytes
@@ -69,13 +71,14 @@ try:
             
             # Check if we need to rotate keys
             if response == b"NEWKEY":
-                print("Received request for key rotation")
+                key_counter += 1  # Increment key counter
+                print(f"Received request for key rotation #{key_counter}")
                 # Receive new public key
                 new_public_key = client_socket.recv(1024).decode()
-                print(f"Received new public key for encryption: {new_public_key}")
+                print(f"Received new public key {key_counter}: {new_public_key}")
                 
                 # Generate and send new encapsulated key
-                new_encapsulated_key = b"new_encapsulated_symmetric_key"  # Mock, in real scenario would use the new public key
+                new_encapsulated_key = f"encapsulated_symmetric_key_{key_counter}".encode()  # Mock with counter
                 
                 # Send new key length
                 new_key_length = len(new_encapsulated_key)
@@ -83,7 +86,7 @@ try:
                 
                 # Send new encapsulated key
                 client_socket.sendall(new_encapsulated_key)
-                print(f"Sent new encapsulated key: {new_encapsulated_key}")
+                print(f"Sent encapsulated key {key_counter}: {new_encapsulated_key}")
                 
                 # Wait for ready signal after key rotation
                 ready_response = client_socket.recv(5)
@@ -106,7 +109,7 @@ try:
     client_socket.sendall(struct.pack('>I', 0))
 
     server_public_key_pem = client_socket.recv(1024).decode()
-    print("Received new server public key")
+    print(f"Received final server public key: {server_public_key_pem}")
     
     # Wait for user input before closing connection
     input("File transfer complete. Press Enter to close the connection...")
