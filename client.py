@@ -59,8 +59,23 @@ try:
 
     server_public_key_pem = client_socket.recv(1024).decode()
     print(f"Received new server public key: {server_public_key_pem}")
+    
+    # Wait for user input before closing connection
+    input("File transfer complete. Press Enter to close the connection...")
+    
+    # We can optionally try to receive any closing message from the server
+    try:
+        client_socket.settimeout(2.0)  # Set a timeout for receiving
+        close_msg = client_socket.recv(1024)
+        if close_msg == b'CLOSE':
+            print("Received close signal from server")
+    except socket.timeout:
+        pass  # No message received, that's fine
+    except:
+        pass  # Handle any other errors
 
 except Exception as e:
     print(f"Error during client communication: {e}")
 finally:
     client_socket.close()
+    print("Connection closed.")

@@ -101,9 +101,19 @@ try:
 
     new_server_public_key = "new_server_public_key"  # Mock
     connection.sendall(new_server_public_key.encode())
+    
+    # Wait for user input before closing connection
+    input("File transfer complete. Press Enter to close the connection...")
+    
+    # Send a termination signal to client (optional)
+    try:
+        connection.sendall(b'CLOSE')
+    except:
+        pass  # Client might have already closed the connection
 
 except Exception as e:
     print(f"Error during server communication: {e}")
 finally:
     connection.close()
     server_socket.close()
+    print("Connection closed.")
