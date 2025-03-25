@@ -42,6 +42,9 @@ try:
         exit(1)
 
     # Receive files
+    files_received = 0  # Counter to track received files
+    key_rotation_threshold = 3  # Change keys after every 3 files (configurable)
+    
     while True:
         try:
             # Receive the filename length
@@ -86,9 +89,31 @@ try:
                     received_file.write(received_data)
 
                 print(f"Received file: {filename}")
+                files_received += 1
                 
-                # Send confirmation to client that we're ready for next file
-                connection.sendall(b"READY")
+                # Check if we need to rotate keys
+                if files_received % key_rotation_threshold == 0:
+                    # Generate and send new key
+                    new_server_public_key = f"new_server_public_key_{files_received}"  # Mock
+                    print(f"Rotating keys after {files_received} files")
+                    # Send key rotation signal
+                    connection.sendall(b"NEWKEY")
+                    # Send the new key
+                    connection.sendall(new_server_public_key.encode())
+                    
+                    # Wait for client to acknowledge and send new encapsulated key
+                    key_length_bytes = connection.recv(4)
+                    key_length = struct.unpack('>I', key_length_bytes)[0]
+                    
+                    # Receive the new encapsulated key
+                    new_encapsulated_key = connection.recv(key_length)
+                    print(f"Received new encapsulated key: {new_encapsulated_key}")
+                    
+                    # Send ready signal after key rotation is complete
+                    connection.sendall(b"READY")
+                else:
+                    # Send regular ready signal for next file
+                    connection.sendall(b"READY")
                 
             except Exception as e:
                 print(f"Error saving file {filename}: {e}")
@@ -98,8 +123,9 @@ try:
             print(f"Error receiving file: {e}")
             break
 
-    new_server_public_key = "new_server_public_key"  # Mock
-    connection.sendall(new_server_public_key.encode())
+    # When all files are sent, send the final key update
+    final_server_public_key = "final_server_public_key"  # Mock
+    connection.sendall(final_server_public_key.encode())
     
     # Wait for user input before closing connection
     input("File transfer complete. Press Enter to close the connection...")

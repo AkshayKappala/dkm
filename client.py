@@ -64,10 +64,38 @@ try:
 
             print(f"Sent file: {filename}")
             
-            # Wait for server confirmation before sending next file
-            response = client_socket.recv(5)  # "READY" is 5 bytes
-            if response != b"READY":
-                print("Server not ready for next file, aborting.")
+            # Wait for server response - could be READY or NEWKEY
+            response = client_socket.recv(6)  # "NEWKEY" is 6 bytes, "READY" is 5 bytes
+            
+            # Check if we need to rotate keys
+            if response == b"NEWKEY":
+                print("Received request for key rotation")
+                # Receive new public key
+                new_public_key = client_socket.recv(1024).decode()
+                print(f"Received new public key for encryption: {new_public_key}")
+                
+                # Generate and send new encapsulated key
+                new_encapsulated_key = b"new_encapsulated_symmetric_key"  # Mock, in real scenario would use the new public key
+                
+                # Send new key length
+                new_key_length = len(new_encapsulated_key)
+                client_socket.sendall(struct.pack('>I', new_key_length))
+                
+                # Send new encapsulated key
+                client_socket.sendall(new_encapsulated_key)
+                print(f"Sent new encapsulated key: {new_encapsulated_key}")
+                
+                # Wait for ready signal after key rotation
+                ready_response = client_socket.recv(5)
+                if ready_response != b"READY":
+                    print("Server not ready after key rotation, aborting.")
+                    break
+                    
+            elif response == b"READY":
+                # Server is ready for next file, continue
+                pass
+            else:
+                print(f"Unexpected response from server: {response}, aborting.")
                 break
 
         except Exception as e:
