@@ -1,10 +1,14 @@
 import socket
 import os
 import struct
+from key_rotation_manager import KeyRotationManager
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 received_directory = "received"
 os.makedirs(received_directory, exist_ok=True)
+
+# Initialize key rotation manager
+key_manager = KeyRotationManager(similarity_threshold=0.85)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -47,7 +51,6 @@ try:
 
     # Receive files
     files_received = 0  # Counter to track received files
-    key_rotation_threshold = 3  # Change keys after every 3 files (configurable)
     
     while True:
         try:
@@ -95,12 +98,17 @@ try:
                 print(f"Received file: {filename}")
                 files_received += 1
                 
-                # Check if we need to rotate keys
-                if files_received % key_rotation_threshold == 0:
+                # Check if we need to rotate keys using the key rotation manager
+                should_rotate_key, similarity_score, reason = key_manager.should_rotate_key(file_path)
+                
+                if similarity_score is not None:
+                    print(f"Image similarity score: {similarity_score:.4f}")
+                
+                if should_rotate_key:
                     key_counter += 1  # Increment key counter
                     # Generate and send new key
                     new_server_public_key = f"server_public_key_{key_counter}"  # Mock with counter
-                    print(f"Rotating keys after {files_received} files - New key: {new_server_public_key}")
+                    print(f"Rotating keys - {reason} - New key: {new_server_public_key}")
                     # Send key rotation signal
                     connection.sendall(b"NEWKEY")
                     # Send the new key
@@ -117,6 +125,8 @@ try:
                     # Send ready signal after key rotation is complete
                     connection.sendall(b"READY")
                 else:
+                    if reason:
+                        print(f"No key rotation needed: {reason}")
                     # Send regular ready signal for next file
                     connection.sendall(b"READY")
                 
