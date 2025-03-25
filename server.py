@@ -27,16 +27,15 @@ try:
     # Receive the key length first
     key_length_bytes = connection.recv(4)
     key_length = struct.unpack('>I', key_length_bytes)[0]
-    print(f"Expecting encapsulated key of length: {key_length}")
     
     # Receive the key with the exact length
     encapsulated_key = connection.recv(key_length)
     print(f"Received encapsulated key: {encapsulated_key}")
 
     if encapsulated_key == b"encapsulated_symmetric_key":  # Mock, compare bytes
-        print("Symmetric key successfully received and decapsulated.")
+        print("Symmetric key successfully received.")
     else:
-        print("Failed to decapsulate symmetric key.")
+        print("Failed to receive symmetric key.")
         connection.close()
         exit(1)
 
@@ -46,28 +45,23 @@ try:
             # Receive the filename length
             filename_length_bytes = connection.recv(4)
             if not filename_length_bytes:
-                print("Client disconnected.")
                 break  # Connection closed
 
             filename_length = struct.unpack('>I', filename_length_bytes)[0]
-            print(f"Filename length: {filename_length}")
 
             if filename_length == 0:
-                print("End of files signal received.")
+                print("All files received successfully.")
                 break  # End of files
 
             # Receive the filename
             filename_bytes = connection.recv(filename_length)
             filename = filename_bytes.decode()
-            print(f"Filename: {filename}")
 
             # Receive the data length
             data_length_bytes = connection.recv(4)
             if not data_length_bytes:
-                print("Client disconnected while expecting data length.")
                 break
             data_length = struct.unpack('>I', data_length_bytes)[0]
-            print(f"Data length: {data_length}")
 
             # Receive the data
             received_data = bytearray()
@@ -75,7 +69,6 @@ try:
             while bytes_received < data_length:
                 chunk = connection.recv(min(4096, data_length - bytes_received))
                 if not chunk:
-                    print("Client disconnected during data transmission.")
                     break
                 received_data.extend(chunk)
                 bytes_received += len(chunk)
@@ -90,13 +83,13 @@ try:
                 with open(file_path, 'wb') as received_file:
                     received_file.write(received_data)
 
-                print(f"Received and saved file: {filename}")
+                print(f"Received file: {filename}")
             except Exception as e:
                 print(f"Error saving file {filename}: {e}")
                 break  # Stop if saving fails
 
         except Exception as e:
-            print(f"General error receiving file: {e}")
+            print(f"Error receiving file: {e}")
             break
 
     new_server_public_key = "new_server_public_key"  # Mock

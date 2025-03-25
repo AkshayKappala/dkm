@@ -12,7 +12,7 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     client_socket.connect(SERVER_ADDRESS)
     server_public_key_pem = client_socket.recv(1024).decode()
-    print(f"Received server public key: {server_public_key_pem}")
+    print("Received server public key")
 
     encapsulated_key = b"encapsulated_symmetric_key"  # Mock, send as bytes
     
@@ -52,27 +52,23 @@ try:
                 print(f"Sent file: {filename}")
 
             except Exception as e:
-                print(f"Error reading or sending file {filename}: {e}")
+                print(f"Error sending file {filename}: {e}")
 
     # Signal the end of the files with a data length of 0
     client_socket.sendall(struct.pack('>I', 0))
 
     server_public_key_pem = client_socket.recv(1024).decode()
-    print(f"Received new server public key: {server_public_key_pem}")
+    print("Received new server public key")
     
     # Wait for user input before closing connection
     input("File transfer complete. Press Enter to close the connection...")
     
     # We can optionally try to receive any closing message from the server
     try:
-        client_socket.settimeout(2.0)  # Set a timeout for receiving
-        close_msg = client_socket.recv(1024)
-        if close_msg == b'CLOSE':
-            print("Received close signal from server")
-    except socket.timeout:
-        pass  # No message received, that's fine
+        client_socket.settimeout(2.0)
+        client_socket.recv(1024)
     except:
-        pass  # Handle any other errors
+        pass  # No need to log anything here
 
 except Exception as e:
     print(f"Error during client communication: {e}")
