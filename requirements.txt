@@ -1,0 +1,2 @@
+# Python version 3.11.2
+websockets==15.0.1
