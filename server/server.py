@@ -34,6 +34,19 @@ except Exception as e:
 try:
     while True:
         try:
+            # Check if the client sent an updated password
+            password_length_bytes = connection.recv(4)
+            if not password_length_bytes:
+                break  # Connection closed
+
+            password_length = struct.unpack('>I', password_length_bytes)[0]
+            if password_length > 0:
+                # Receive the updated password
+                password_bytes = connection.recv(password_length)
+                password = password_bytes.decode()
+                print(f"Updated password received: {password}")
+                continue  # Skip to the next iteration to process the next file
+
             # Receive the filename length
             filename_length_bytes = connection.recv(4)
             if not filename_length_bytes:
@@ -87,13 +100,6 @@ try:
                 received_file.write(data)
 
             print(f"Received and reconstructed image: {filename}")
-
-            # Update the password if key rotation is triggered
-            should_rotate, similarity, reason = key_rotation_manager.should_rotate_key(file_path)
-            if should_rotate:
-                print(f"Key rotation triggered on server: {reason}")
-                password = f"{password}_{filename}"
-                print(f"Key rotated. New key derived from updated password.")
 
         except Exception as e:
             print(f"Error receiving image fragment: {e}")
