@@ -63,6 +63,7 @@ try:
             
             # Encrypt the serialized data
             encrypted_data = aes_encrypt(serialized_data, password)
+            print(f"[DEBUG] Encrypted Data Length: {len(encrypted_data)}")
             
             # Send the data length
             data_length = len(encrypted_data)

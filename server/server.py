@@ -66,8 +66,10 @@ try:
                 bytes_received += len(chunk)
 
             if bytes_received != data_length:
-                print("Incomplete image fragment received.")
+                print(f"[ERROR] Incomplete image fragment received. Expected: {data_length}, Received: {bytes_received}")
                 break
+
+            print(f"[DEBUG] Received Encrypted Data Length: {len(encrypted_data)}")
 
             # Decrypt the received image fragment
             decrypted_data = aes_decrypt(encrypted_data, password)

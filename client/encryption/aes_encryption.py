@@ -21,7 +21,9 @@ def aes_encrypt(data, password):
     """Encrypts the given data using AES-256 encryption."""
     key = derive_key(password)
     cipher = AES.new(key, AES.MODE_CBC)
-    ciphertext = cipher.iv + cipher.encrypt(pad(data, AES.block_size))
+    iv = cipher.iv
+    ciphertext = iv + cipher.encrypt(pad(data, AES.block_size))
+    print(f"[DEBUG] AES Encryption - IV: {iv.hex()}, Ciphertext Length: {len(ciphertext)}")
     return ciphertext
 
 def encrypt_image_fragment(fragment, password):
