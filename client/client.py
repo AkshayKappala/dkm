@@ -94,6 +94,19 @@ try:
     client_socket.sendall(struct.pack('>I', 0))
     logging.info("File transfer complete.")
     
+    # Send end-of-transfer signal
+    client_socket.sendall(b'\x03')  # Send end-of-transfer flag
+    logging.info("End-of-transfer signal sent.")
+
+    try:
+        ack = client_socket.recv(3)
+        if ack == b"ACK":
+            logging.info("Server acknowledged end-of-transfer.")
+        else:
+            logging.warning("Unexpected response from server after end-of-transfer.")
+    except Exception as e:
+        logging.error(f"Error waiting for server acknowledgment after end-of-transfer: {e}")
+
     try:
         client_socket.settimeout(2.0)
         close_msg = client_socket.recv(1024)

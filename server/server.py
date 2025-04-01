@@ -89,6 +89,13 @@ def handle_client_connection(client_socket, client_address):
 
                     logging.info(f"File {filename} saved successfully.")
                     client_socket.sendall(b"ACK")  # Send acknowledgment to client
+
+                # Handle end-of-transfer
+                elif flag == b'\x03':
+                    logging.info("End-of-transfer signal received from client.")
+                    client_socket.sendall(b"ACK")  # Acknowledge end-of-transfer
+                    break
+
                 else:
                     logging.error("Unknown flag received. Closing connection.")
                     break
