@@ -85,6 +85,9 @@ try:
                 print(f"[DEBUG] Incomplete image fragment received. Expected: {data_length}, Received: {bytes_received}")
                 break
 
+            # Log metadata instead of raw binary data
+            print(f"[DEBUG] Encrypted data received. Size: {len(encrypted_data)} bytes")
+
             print("[DEBUG] Decrypting received data...")
             decrypted_data = aes_decrypt(encrypted_data, password)
             print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
