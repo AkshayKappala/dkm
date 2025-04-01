@@ -71,8 +71,11 @@ try:
             # Decrypt the received image fragment
             decrypted_data = aes_decrypt(encrypted_data, password)
 
+            # Derive the key from the password
+            key = derive_key(password)
+
             # Reconstruct the image from the decrypted fragments
-            reconstructed_image = reconstruct_image(decrypted_data)
+            reconstructed_image = reconstruct_image(decrypted_data, key)
 
             # Save the reconstructed image
             file_path = os.path.join(received_directory, filename)
