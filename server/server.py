@@ -94,7 +94,8 @@ def handle_client_connection(client_socket, client_address):
                 elif flag == b'\x03':
                     logging.info("End-of-transfer signal received from client.")
                     client_socket.sendall(b"ACK")  # Acknowledge end-of-transfer
-                    break
+                    logging.info("Acknowledgment for end-of-transfer sent to client.")
+                    continue  # Wait for the client to close the connection
 
                 else:
                     logging.error("Unknown flag received. Closing connection.")

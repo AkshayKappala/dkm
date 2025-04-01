@@ -104,6 +104,8 @@ try:
             logging.info("Server acknowledged end-of-transfer.")
         else:
             logging.warning("Unexpected response from server after end-of-transfer.")
+    except ConnectionResetError:
+        logging.info("Server closed the connection after acknowledging end-of-transfer.")
     except Exception as e:
         logging.error(f"Error waiting for server acknowledgment after end-of-transfer: {e}")
 
