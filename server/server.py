@@ -4,12 +4,19 @@ import struct
 from server.decryption.aes_decryption import aes_decrypt
 from server.decryption.dwt_reconstructor import reconstruct_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
+from shared.key_rotation_manager import KeyRotationManager  # Import KeyRotationManager
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 received_directory = "received"
 os.makedirs(received_directory, exist_ok=True)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Password for decryption (should match the client's password logic)
+password = "secure_password"  # Update this dynamically if key rotation is used
+
+# Create a key rotation manager
+key_rotation_manager = KeyRotationManager()
 
 try:
     server_socket.bind(SERVER_ADDRESS)
@@ -62,7 +69,7 @@ try:
                 break
 
             # Decrypt the received image fragment
-            decrypted_data = aes_decrypt(encrypted_data)
+            decrypted_data = aes_decrypt(encrypted_data, password)
 
             # Reconstruct the image from the decrypted fragments
             reconstructed_image = reconstruct_image(decrypted_data)
@@ -73,6 +80,13 @@ try:
                 received_file.write(reconstructed_image)
 
             print(f"Received and reconstructed image: {filename}")
+
+            # Update the password if key rotation is triggered
+            should_rotate, similarity, reason = key_rotation_manager.should_rotate_key(file_path)
+            if should_rotate:
+                print(f"Key rotation triggered on server: {reason}")
+                password = f"{password}_{filename}"
+                print(f"Key rotated. New key derived from updated password.")
 
         except Exception as e:
             print(f"Error receiving image fragment: {e}")

@@ -5,7 +5,7 @@ from shared.crypto_utils import derive_key
 
 def aes_decrypt(ciphertext, password):
     """Decrypts the given ciphertext using AES-256 encryption."""
-    key = derive_key(password)
+    key = derive_key(password)  # Derive the key using the provided password
     cipher = AES.new(key, AES.MODE_CBC, iv=ciphertext[:16])
     decrypted = unpad(cipher.decrypt(ciphertext[16:]), AES.block_size)
     return decrypted
