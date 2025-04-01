@@ -1,7 +1,7 @@
 import numpy as np
 import pywt
 import cv2
-from shared.crypto_utils import decrypt_aes
+from dkm.shared.crypto_utils import derive_key
 
 class DWTReconstructor:
     def __init__(self):
@@ -18,15 +18,9 @@ class DWTReconstructor:
         Returns:
             Reconstructed image as a numpy array.
         """
-        # Decrypt the fragments
-        ll2 = decrypt_aes(fragments['ll2'], key)
-        lh2 = decrypt_aes(fragments['lh2'], key)
-        hl2 = decrypt_aes(fragments['hl2'], key)
-        hh2 = decrypt_aes(fragments['hh2'], key)
-
         # Combine the fragments to reconstruct the image
-        coeffs = (ll2, (lh2, hl2, hh2))
-        reconstructed_image = pywt.idwt2(coeffs, self.wavelet)
+        coeffs = [fragments['ll2'], fragments['lh2_hl2_hh2'], fragments['lh_hl_hh']]
+        reconstructed_image = pywt.waverec2(coeffs, self.wavelet)
 
         return np.clip(reconstructed_image, 0, 255).astype(np.uint8)
 
@@ -39,3 +33,8 @@ class DWTReconstructor:
             output_path: The path where the image will be saved.
         """
         cv2.imwrite(output_path, image)
+
+# Add a standalone function for convenience
+def reconstruct_image(fragments, key):
+    reconstructor = DWTReconstructor()
+    return reconstructor.reconstruct_image(fragments, key)

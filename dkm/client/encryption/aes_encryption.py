@@ -2,6 +2,7 @@ import os
 import hashlib
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
+from dkm.shared.crypto_utils import derive_key
 
 def generate_aes_key(password):
     """
@@ -15,6 +16,13 @@ def generate_aes_key(password):
     """
     sha256_hash = hashlib.sha256(password.encode()).digest()
     return sha256_hash
+
+def aes_encrypt(data, password):
+    """Encrypts the given data using AES-256 encryption."""
+    key = derive_key(password)
+    cipher = AES.new(key, AES.MODE_CBC)
+    ciphertext = cipher.iv + cipher.encrypt(pad(data, AES.block_size))
+    return ciphertext
 
 def encrypt_image_fragment(fragment, password):
     """

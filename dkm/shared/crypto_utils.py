@@ -1,17 +1,17 @@
 import hashlib
 import os
 
-def generate_sha256_hash(data):
-    """Generate a SHA-256 hash of the given data."""
-    sha256 = hashlib.sha256()
-    sha256.update(data)
-    return sha256.hexdigest()
+def derive_key(password):
+    """Derives a 256-bit key from the given password using SHA-256."""
+    return hashlib.sha256(password.encode()).digest()
 
-def generate_sha512_hash(data):
-    """Generate a SHA-512 hash of the given data."""
-    sha512 = hashlib.sha512()
-    sha512.update(data)
-    return sha512.hexdigest()
+def sha256_hash(data):
+    """Generates a SHA-256 hash of the given data."""
+    return hashlib.sha256(data).digest()
+
+def sha512_hash(data):
+    """Generates a SHA-512 hash of the given data."""
+    return hashlib.sha512(data).digest()
 
 def derive_key_from_hash(hash_value):
     """Derive a key from the SHA-256 hash value."""

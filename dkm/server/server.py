@@ -1,9 +1,9 @@
 import socket
 import os
 import struct
-from decryption.aes_decryption import decrypt_image_fragment
-from decryption.dwt_reconstructor import reconstruct_image
-from shared.crypto_utils import generate_sha256_hash
+from dkm.server.decryption.aes_decryption import aes_decrypt
+from dkm.server.decryption.dwt_reconstructor import reconstruct_image
+from dkm.shared.crypto_utils import derive_key, sha256_hash, sha512_hash
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 received_directory = "received"
@@ -62,7 +62,7 @@ try:
                 break
 
             # Decrypt the received image fragment
-            decrypted_data = decrypt_image_fragment(encrypted_data)
+            decrypted_data = aes_decrypt(encrypted_data)
 
             # Reconstruct the image from the decrypted fragments
             reconstructed_image = reconstruct_image(decrypted_data)
@@ -106,3 +106,8 @@ finally:
             print("Server socket closed.")
     except:
         pass  # Socket might already be closed
+
+# Example usage of reconstruct_image
+# fragments = {'ll2': ..., 'lh2_hl2_hh2': ..., 'lh_hl_hh': ...}
+# key = ...
+# reconstructed_image = reconstruct_image(fragments, key)

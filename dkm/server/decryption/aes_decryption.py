@@ -1,11 +1,7 @@
 import os
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-from hashlib import sha256
-
-def derive_key(password):
-    """Derives a 256-bit AES key from a given password using SHA-256."""
-    return sha256(password.encode()).digest()
+from dkm.shared.crypto_utils import derive_key
 
 def aes_decrypt(ciphertext, password):
     """Decrypts the given ciphertext using AES-256 encryption."""

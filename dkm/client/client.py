@@ -1,9 +1,10 @@
 import socket
 import os
 import struct
-from encryption.aes_encryption import encrypt_image_fragment
-from encryption.dwt_processor import process_image
-from utils.file_utils import read_image_files
+from dkm.client.encryption.aes_encryption import aes_encrypt
+from dkm.client.encryption.dwt_processor import process_image
+from dkm.shared.crypto_utils import derive_key, sha256_hash, sha512_hash
+from dkm.client.utils.file_utils import read_image
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 
@@ -36,7 +37,7 @@ try:
         raise Exception("Server not ready")
 
     # Get all image files to send
-    files_to_send = read_image_files(sent_directory)
+    files_to_send = read_image(sent_directory)
     
     # Iterate over files in sorted order
     for filename in files_to_send:
@@ -45,7 +46,7 @@ try:
             # Process the image to get encrypted fragments
             fragments = process_image(file_path)
             for fragment in fragments:
-                encrypted_fragment = encrypt_image_fragment(fragment)
+                encrypted_fragment = aes_encrypt(fragment)  # Updated function call
                 
                 # Prepend the length of the encrypted fragment
                 fragment_length = len(encrypted_fragment)
@@ -127,3 +128,7 @@ finally:
             print("Connection closed.")
     except:
         pass  # Socket might already be closed
+
+# Example usage of process_image
+# image_path = "path/to/image.png"
+# fragments = process_image(image_path)

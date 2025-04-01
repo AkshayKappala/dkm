@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from skimage import io
-from ID_MSE import compare_images
+from dkm.ID_MSE import compare_images
 
 class KeyRotationManager:
     def __init__(self, similarity_threshold=0.85):

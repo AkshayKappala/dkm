@@ -8,16 +8,12 @@ class DWTProcessor:
         self.image = io.imread(image_path, as_gray=True)
 
     def decompose(self):
-        coeffs2 = pywt.dwt2(self.image, 'haar')
-        cA, (cH, cV, cD) = coeffs2
-        return cA, cH, cV, cD
+        coeffs = pywt.wavedec2(self.image, 'haar', level=2)
+        ll2, (lh2, hl2, hh2), (lh, hl, hh) = coeffs
+        return ll2, (lh2, hl2, hh2), (lh, hl, hh)
 
     def extract_fragments(self):
-        cA, cH, cV, cD = self.decompose()
-        ll2 = cA
-        lh2 = cH
-        hl2 = cV
-        hh2 = cD
+        ll2, (lh2, hl2, hh2), (lh, hl, hh) = self.decompose()
         return ll2, lh2, hl2, hh2
 
     def save_fragments(self, fragments, output_prefix):
@@ -26,3 +22,8 @@ class DWTProcessor:
         io.imsave(f"{output_prefix}_lh2.png", lh2)
         io.imsave(f"{output_prefix}_hl2.png", hl2)
         io.imsave(f"{output_prefix}_hh2.png", hh2)
+
+# Add a standalone function for convenience
+def process_image(image_path):
+    processor = DWTProcessor(image_path)
+    return processor.decompose()
