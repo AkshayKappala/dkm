@@ -95,12 +95,16 @@ try:
             print(f"[DEBUG] Encrypted data received. Size: {len(encrypted_data)} bytes, Checksum: {checksum}")
 
             print("[DEBUG] Decrypting received data...")
-            decrypted_data = aes_decrypt(encrypted_data, password)
-            print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
+            try:
+                decrypted_data = aes_decrypt(encrypted_data, password)
+                print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
 
-            # Log checksum of decrypted data
-            decrypted_checksum = calculate_checksum(decrypted_data)
-            print(f"[DEBUG] Decrypted data checksum: {decrypted_checksum}")
+                # Log checksum of decrypted data
+                decrypted_checksum = calculate_checksum(decrypted_data)
+                print(f"[DEBUG] Decrypted data checksum: {decrypted_checksum}")
+            except Exception as e:
+                print(f"[ERROR] Failed to decrypt data: {e}")
+                break
 
             try:
                 print("[DEBUG] Deserializing decrypted data...")

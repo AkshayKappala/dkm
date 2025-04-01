@@ -73,19 +73,13 @@ try:
             
             # Serialize the data
             serialized_data = pickle.dumps(data)
-            print(f"[DEBUG] Serialized data size: {len(serialized_data)} bytes")
-
-            # Log checksum of serialized data
             serialized_checksum = calculate_checksum(serialized_data)
-            print(f"[DEBUG] Serialized data checksum: {serialized_checksum}")
+            print(f"[DEBUG] Serialized data size: {len(serialized_data)} bytes, Checksum: {serialized_checksum}")
 
             # Encrypt the serialized data
             encrypted_data = aes_encrypt(serialized_data, password)
-            print(f"[DEBUG] Encrypted data size: {len(encrypted_data)} bytes")
-
-            # Log checksum of encrypted data
             encrypted_checksum = calculate_checksum(encrypted_data)
-            print(f"[DEBUG] Encrypted data checksum: {encrypted_checksum}")
+            print(f"[DEBUG] Encrypted data size: {len(encrypted_data)} bytes, Checksum: {encrypted_checksum}")
             
             # Send the data length
             data_length = len(encrypted_data)
@@ -97,7 +91,7 @@ try:
             print(f"Sent encrypted file: {filename}")
 
         except Exception as e:
-            print(f"Error sending file {filename}: {e}")
+            print(f"[ERROR] Error sending file {filename}: {e}")
             break
 
     # Signal the end of files with a filename length of 0
