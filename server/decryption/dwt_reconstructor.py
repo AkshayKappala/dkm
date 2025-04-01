@@ -1,7 +1,7 @@
 import numpy as np
 import pywt
 import cv2
-from dkm.shared.crypto_utils import derive_key
+from shared.crypto_utils import derive_key
 
 class DWTReconstructor:
     def __init__(self):

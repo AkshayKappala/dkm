@@ -1,7 +1,7 @@
 import os
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-from dkm.shared.crypto_utils import derive_key
+from shared.crypto_utils import derive_key
 
 def aes_decrypt(ciphertext, password):
     """Decrypts the given ciphertext using AES-256 encryption."""

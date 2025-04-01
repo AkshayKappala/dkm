@@ -2,7 +2,7 @@ import os
 import hashlib
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-from dkm.shared.crypto_utils import derive_key
+from shared.crypto_utils import derive_key
 
 def generate_aes_key(password):
     """

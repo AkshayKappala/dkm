@@ -1,9 +1,9 @@
 import socket
 import os
 import struct
-from dkm.server.decryption.aes_decryption import aes_decrypt
-from dkm.server.decryption.dwt_reconstructor import reconstruct_image
-from dkm.shared.crypto_utils import derive_key, sha256_hash, sha512_hash
+from server.decryption.aes_decryption import aes_decrypt
+from server.decryption.dwt_reconstructor import reconstruct_image
+from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 received_directory = "received"

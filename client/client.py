@@ -1,10 +1,10 @@
 import socket
 import os
 import struct
-from dkm.client.encryption.aes_encryption import aes_encrypt
-from dkm.client.encryption.dwt_processor import process_image
-from dkm.shared.crypto_utils import derive_key, sha256_hash, sha512_hash
-from dkm.client.utils.file_utils import read_image
+from client.encryption.aes_encryption import aes_encrypt
+from client.encryption.dwt_processor import process_image
+from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
+from client.utils.file_utils import read_image
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 
