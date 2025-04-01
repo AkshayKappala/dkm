@@ -109,17 +109,8 @@ try:
     except Exception as e:
         logging.error(f"Error waiting for server acknowledgment after end-of-transfer: {e}")
 
-    try:
-        client_socket.settimeout(2.0)
-        close_msg = client_socket.recv(1024)
-        if close_msg == b'CLOSE':
-            logging.info("Server closed the connection.")
-            try:
-                client_socket.sendall(b'ACK')
-            except:
-                pass
-    except:
-        logging.warning("Timeout waiting for server acknowledgment.")
+    # No need to wait for further messages; close the socket
+    logging.info("Closing client socket after end-of-transfer.")
 
 except Exception as e:
     logging.error("Error occurred during client operation: %s", e)

@@ -95,7 +95,10 @@ def handle_client_connection(client_socket, client_address):
                     logging.info("End-of-transfer signal received from client.")
                     client_socket.sendall(b"ACK")  # Acknowledge end-of-transfer
                     logging.info("Acknowledgment for end-of-transfer sent to client.")
-                    continue  # Wait for the client to close the connection
+                    
+                    # Wait for user input to close the connection gracefully
+                    input("Press Enter to close the connection gracefully...")
+                    break  # Exit the loop and close the connection
 
                 else:
                     logging.error("Unknown flag received. Closing connection.")
