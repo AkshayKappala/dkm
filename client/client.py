@@ -5,37 +5,26 @@ from client.encryption.aes_encryption import aes_encrypt
 from client.encryption.dwt_processor import process_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
 from client.utils.file_utils import read_image
+from shared.key_rotation_manager import KeyRotationManager
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 
 # Directory containing files to send
 sent_directory = "sent"
 
+# Create a key rotation manager
+key_rotation_manager = KeyRotationManager()
+
+# Password for encryption
+password = "secure_password"  # In a real app, this would be securely provided
+
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 try:
+    print(f"Connecting to server at {SERVER_ADDRESS}...")
     client_socket.connect(SERVER_ADDRESS)
-    server_public_key_pem = client_socket.recv(1024).decode()
-    print(f"Received server public key: {server_public_key_pem}")
+    print("Connected to server successfully")
     
-    key_counter = 1  # Initialize key counter
-
-    encapsulated_key = f"encapsulated_symmetric_key_{key_counter}".encode()  # Mock with counter
-    
-    # Send the key length first
-    key_length = len(encapsulated_key)
-    client_socket.sendall(struct.pack('>I', key_length))
-    
-    # Send the key
-    client_socket.sendall(encapsulated_key)
-    print(f"Sent encapsulated key {key_counter}: {encapsulated_key}")
-    
-    # Wait for initial server ready signal
-    response = client_socket.recv(5)  # "READY" is 5 bytes
-    if response != b"READY":
-        print("Server not ready to receive files, aborting.")
-        raise Exception("Server not ready")
-
     # Get all image files to send
     files_to_send = read_image(sent_directory)
     
@@ -43,61 +32,47 @@ try:
     for filename in files_to_send:
         file_path = os.path.join(sent_directory, filename)
         try:
-            # Process the image to get encrypted fragments
-            fragments = process_image(file_path)
-            for fragment in fragments:
-                encrypted_fragment = aes_encrypt(fragment)  # Updated function call
+            print(f"Processing file: {filename}")
+            
+            # Check if we should rotate the key for this file
+            should_rotate, similarity, reason = key_rotation_manager.should_rotate_key(file_path)
+            if should_rotate:
+                print(f"Key rotation triggered: {reason}")
+                # In a real implementation, you would rotate the key here
+                # For now, we'll just update the password for demonstration
+                password = f"{password}_{filename}"
+                print(f"Key rotated. New key derived from updated password.")
+            
+            # Send the filename length
+            filename_bytes = filename.encode()
+            filename_length = len(filename_bytes)
+            client_socket.sendall(struct.pack('>I', filename_length))
+            
+            # Send the filename
+            client_socket.sendall(filename_bytes)
+            
+            with open(file_path, 'rb') as file:
+                data = file.read()
                 
-                # Prepend the length of the encrypted fragment
-                fragment_length = len(encrypted_fragment)
-                client_socket.sendall(struct.pack('>I', fragment_length))
-                client_socket.sendall(encrypted_fragment)
-
-                print(f"Sent encrypted fragment of file: {filename}")
-                
-                # Wait for server response - could be READY or NEWKEY
-                response = client_socket.recv(6)  # "NEWKEY" is 6 bytes, "READY" is 5 bytes
-                
-                if response == b"NEWKEY":
-                    key_counter += 1  # Increment key counter
-                    print(f"Received request for key rotation #{key_counter}")
-                    # Receive new public key
-                    new_public_key = client_socket.recv(1024).decode()
-                    print(f"Received new public key {key_counter}: {new_public_key}")
-                    
-                    # Generate and send new encapsulated key
-                    new_encapsulated_key = f"encapsulated_symmetric_key_{key_counter}".encode()  # Mock with counter
-                    
-                    # Send new key length
-                    new_key_length = len(new_encapsulated_key)
-                    client_socket.sendall(struct.pack('>I', new_key_length))
-                    
-                    # Send new encapsulated key
-                    client_socket.sendall(new_encapsulated_key)
-                    print(f"Sent encapsulated key {key_counter}: {new_encapsulated_key}")
-                    
-                    # Wait for ready signal after key rotation
-                    ready_response = client_socket.recv(5)
-                    if ready_response != b"READY":
-                        print("Server not ready after key rotation, aborting.")
-                        break
-                    
-                elif response == b"READY":
-                    # Server is ready for next fragment, continue
-                    pass
-                else:
-                    print(f"Unexpected response from server: {response}, aborting.")
-                    break
+            # Encrypt the data
+            encrypted_data = aes_encrypt(data, password)
+            
+            # Send the data length
+            data_length = len(encrypted_data)
+            client_socket.sendall(struct.pack('>I', data_length))
+            
+            # Send the encrypted data
+            client_socket.sendall(encrypted_data)
+            
+            print(f"Sent encrypted file: {filename}")
 
         except Exception as e:
             print(f"Error sending file {filename}: {e}")
             break
 
-    # Signal the end of the fragments with a data length of 0
+    # Signal the end of files with a filename length of 0
     client_socket.sendall(struct.pack('>I', 0))
-
-    server_public_key_pem = client_socket.recv(1024).decode()
-    print(f"Received final server public key: {server_public_key_pem}")
+    print("Signaled end of file transmission")
     
     # Wait for user input before closing connection
     input("File transfer complete. Press Enter to close the connection...")
@@ -128,7 +103,3 @@ finally:
             print("Connection closed.")
     except:
         pass  # Socket might already be closed
-
-# Example usage of process_image
-# image_path = "path/to/image.png"
-# fragments = process_image(image_path)
