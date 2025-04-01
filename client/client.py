@@ -24,17 +24,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def calculate_checksum(data):
     return hashlib.sha256(data).hexdigest()
 
-def send_file_to_server(server_ip, server_port, file_data):
-    try:
-        # Send file data and wait for acknowledgment
-        client_socket.sendall(file_data)
-        ack = client_socket.recv(3)
-        if ack != b"ACK":
-            logging.warning("No acknowledgment received.")
-        else:
-            logging.info("File sent successfully.")
-    except Exception as e:
-        logging.error(f"Error sending file: {e}")
+def send_file_to_server(file_data, retries=3):
+    for attempt in range(retries):
+        try:
+            client_socket.sendall(file_data)
+            ack = client_socket.recv(3)
+            if ack == b"ACK":
+                logging.info("File sent successfully.")
+                return True
+            else:
+                logging.warning("No acknowledgment received. Retrying...")
+        except Exception as e:
+            logging.error(f"Error sending file: {e}")
+            if attempt < retries - 1:
+                logging.info("Retrying...")
+            else:
+                logging.error("Max retries reached. Aborting.")
+                return False
 
 try:
     logging.info("Connecting to server at %s:%d", *SERVER_ADDRESS)
@@ -74,7 +80,8 @@ try:
             
             data_length = len(encrypted_data)
             client_socket.sendall(struct.pack('>Q', data_length))  # Use 8 bytes for length
-            send_file_to_server(SERVER_ADDRESS[0], SERVER_ADDRESS[1], encrypted_data)
+            if not send_file_to_server(encrypted_data):
+                break  # Stop processing if file sending fails
 
         except Exception as e:
             logging.error("Error processing file %s: %s", filename, e)

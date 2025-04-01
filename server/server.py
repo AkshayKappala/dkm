@@ -24,46 +24,56 @@ def calculate_checksum(data):
 
 def handle_client_connection(client_socket, client_address):
     logging.info("Connection established with client: %s", client_address)
-    while True:
+    try:
+        while True:
+            try:
+                # Receive filename length
+                filename_length_bytes = client_socket.recv(4)
+                if not filename_length_bytes:
+                    logging.info("No filename length received. Closing connection.")
+                    break
+
+                filename_length = int.from_bytes(filename_length_bytes, 'big')
+                filename_bytes = client_socket.recv(filename_length)
+                filename = filename_bytes.decode('utf-8', errors='replace')
+
+                # Receive file data length
+                file_data_length_bytes = client_socket.recv(8)
+                if not file_data_length_bytes:
+                    logging.info("No file data length received. Closing connection.")
+                    break
+
+                file_data_length = int.from_bytes(file_data_length_bytes, 'big')
+                file_data = bytearray()
+                bytes_received = 0
+                while bytes_received < file_data_length:
+                    chunk = client_socket.recv(min(4096, file_data_length - bytes_received))
+                    if not chunk:
+                        raise ConnectionError("Incomplete data received.")
+                    file_data.extend(chunk)
+                    bytes_received += len(chunk)
+
+                # Save the file
+                save_path = os.path.join(received_directory, filename)
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                with open(save_path, 'wb') as f:
+                    f.write(file_data)
+
+                logging.info(f"File {filename} saved successfully.")
+                client_socket.sendall(b"ACK")  # Send acknowledgment to client
+
+            except ConnectionError as e:
+                logging.warning(f"Connection error: {e}")
+                break
+            except Exception as e:
+                logging.error(f"Error handling client data: {e}")
+                break
+    finally:
         try:
-            # Receive filename length
-            filename_length_bytes = client_socket.recv(4)
-            if not filename_length_bytes:
-                logging.info("No filename length received. Closing connection.")
-                break
-
-            filename_length = int.from_bytes(filename_length_bytes, 'big')
-            filename_bytes = client_socket.recv(filename_length)
-            filename = filename_bytes.decode('utf-8', errors='replace')
-
-            # Receive file data length
-            file_data_length_bytes = client_socket.recv(8)
-            if not file_data_length_bytes:
-                logging.info("No file data length received. Closing connection.")
-                break
-
-            file_data_length = int.from_bytes(file_data_length_bytes, 'big')
-            file_data = bytearray()
-            bytes_received = 0
-            while bytes_received < file_data_length:
-                chunk = client_socket.recv(min(4096, file_data_length - bytes_received))
-                if not chunk:
-                    raise ValueError("Incomplete data received.")
-                file_data.extend(chunk)
-                bytes_received += len(chunk)
-
-            # Save the file
-            save_path = os.path.join(received_directory, filename)
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            with open(save_path, 'wb') as f:
-                f.write(file_data)
-
-            logging.info(f"File {filename} saved successfully.")
-            client_socket.sendall(b"ACK")  # Send acknowledgment to client
-
+            client_socket.close()
+            logging.info("Client connection closed.")
         except Exception as e:
-            logging.error(f"Error handling client data: {e}")
-            break
+            logging.error(f"Error closing client socket: {e}")
 
 try:
     logging.info("Starting server at %s:%d", *SERVER_ADDRESS)
