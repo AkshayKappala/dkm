@@ -4,8 +4,8 @@ import struct
 from client.encryption.aes_encryption import aes_encrypt
 from client.encryption.dwt_processor import process_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
-from client.utils.file_utils import read_image
 from shared.key_rotation_manager import KeyRotationManager
+from client.utils.file_utils import read_image  # Import read_image from file_utils
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 
@@ -26,7 +26,10 @@ try:
     print("Connected to server successfully")
     
     # Get all image files to send
-    files_to_send = read_image(sent_directory)
+    files_to_send = read_image(sent_directory)  # Use read_image from file_utils
+    if not files_to_send:
+        print(f"No valid image files found in directory: {sent_directory}")
+        raise Exception("No files to send")
     
     # Iterate over files in sorted order
     for filename in files_to_send:

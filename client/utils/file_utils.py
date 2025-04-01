@@ -1,14 +1,25 @@
 import os
 from PIL import Image
 
-def read_image(file_path):
-    """Read an image from the specified file path."""
+def read_image(directory):
+    """
+    Reads all image files from the specified directory.
+
+    Args:
+        directory (str): Path to the directory containing image files.
+
+    Returns:
+        list: List of image filenames in the directory.
+    """
+    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif']
     try:
-        with Image.open(file_path) as img:
-            return img.convert('RGB')  # Convert to RGB if not already
+        return [
+            f for f in os.listdir(directory)
+            if os.path.isfile(os.path.join(directory, f)) and f.lower().endswith(tuple(image_extensions))
+        ]
     except Exception as e:
-        print(f"Error reading image {file_path}: {e}")
-        return None
+        print(f"Error reading images from {directory}: {e}")
+        return []
 
 def write_image(image, file_path):
     """Write an image to the specified file path."""
