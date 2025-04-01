@@ -1,11 +1,9 @@
 import socket
 import os
 import struct
-import pickle  # Add this import
+import pickle
 from server.decryption.aes_decryption import aes_decrypt
-from server.decryption.dwt_reconstructor import reconstruct_image
-from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
-from shared.key_rotation_manager import KeyRotationManager  # Import KeyRotationManager
+from shared.key_rotation_manager import KeyRotationManager
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 received_directory = "received"
@@ -13,10 +11,8 @@ os.makedirs(received_directory, exist_ok=True)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Password for decryption (should match the client's password logic)
-password = "secure_password"  # Update this dynamically if key rotation is used
+password = "secure_password"
 
-# Create a key rotation manager
 key_rotation_manager = KeyRotationManager()
 
 try:
@@ -34,46 +30,33 @@ except Exception as e:
 try:
     while True:
         try:
-            # Check if the client sent an updated password
             password_length_bytes = connection.recv(4)
             if not password_length_bytes:
-                break  # Connection closed
+                break
 
             password_length = struct.unpack('>I', password_length_bytes)[0]
             if password_length > 0:
-                # Receive the updated password
                 password_bytes = connection.recv(password_length)
-                password = password_bytes.decode('utf-8', errors='replace')  # Decode with error handling
-                print(f"Updated password received: {password}")
-                continue  # Skip to the next iteration to process the next file
+                password = password_bytes.decode('utf-8', errors='replace')
+                continue
 
-            # Receive the filename length
-            print(f"[DEBUG] Receiving filename length...")
             filename_length_bytes = connection.recv(4)
             if not filename_length_bytes:
-                break  # Connection closed
+                break
 
             filename_length = struct.unpack('>I', filename_length_bytes)[0]
-            print(f"[DEBUG] Filename length received: {filename_length}")
-
             if filename_length == 0:
                 print("All files received successfully.")
-                break  # End of files
+                break
 
-            # Receive the filename
             filename_bytes = connection.recv(filename_length)
-            filename = filename_bytes.decode('utf-8', errors='replace')  # Decode with error handling
-            print(f"[DEBUG] Filename received: {filename}")
+            filename = filename_bytes.decode('utf-8', errors='replace')
 
-            # Receive the data length
-            print(f"[DEBUG] Receiving data length...")
             data_length_bytes = connection.recv(4)
             if not data_length_bytes:
                 break
             data_length = struct.unpack('>I', data_length_bytes)[0]
-            print(f"[DEBUG] Data length received: {data_length}")
 
-            # Receive the encrypted image fragment
             encrypted_data = bytearray()
             bytes_received = 0
             while bytes_received < data_length:
@@ -82,27 +65,19 @@ try:
                     break
                 encrypted_data.extend(chunk)
                 bytes_received += len(chunk)
-            print(f"[DEBUG] Encrypted data received: {len(encrypted_data)} bytes")
 
             if bytes_received != data_length:
-                print(f"[ERROR] Incomplete image fragment received. Expected: {data_length}, Received: {bytes_received}")
+                print(f"Incomplete image fragment received. Expected: {data_length}, Received: {bytes_received}")
                 break
 
-            print(f"[DEBUG] Received Encrypted Data Length: {len(encrypted_data)}")
-
-            # Decrypt the received image fragment
             decrypted_data = aes_decrypt(encrypted_data, password)
-            print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
 
-            # Deserialize the decrypted data
             try:
                 data = pickle.loads(decrypted_data)
-                print(f"[DEBUG] Deserialized data size: {len(data)} bytes")
             except Exception as e:
                 print(f"Error parsing decrypted data: {e}")
                 break
 
-            # Save the reconstructed image
             file_path = os.path.join(received_directory, filename)
             with open(file_path, 'wb') as received_file:
                 received_file.write(data)
@@ -113,36 +88,25 @@ try:
             print(f"Error receiving image fragment: {e}")
             break
 
-    # Wait for user input before closing connection
     input("Image transfer complete. Press Enter to close the connection...")
 
-    # Send a termination signal to client
-    print("Closing connection...")
     try:
         connection.sendall(b'CLOSE')
     except:
-        print("Client may have already disconnected")
+        pass
 
 except Exception as e:
     print(f"Error during server communication: {e}")
 finally:
-    # Ensure proper socket cleanup
     try:
         if connection:
             connection.shutdown(socket.SHUT_RDWR)
             connection.close()
-            print("Connection closed.")
     except:
-        pass  # Connection might already be closed
+        pass
 
     try:
         if server_socket:
             server_socket.close()
-            print("Server socket closed.")
     except:
-        pass  # Socket might already be closed
-
-# Example usage of reconstruct_image
-# fragments = {'ll2': ..., 'lh2_hl2_hh2': ..., 'lh_hl_hh': ...}
-# key = ...
-# reconstructed_image = reconstruct_image(fragments, key)
+        pass
