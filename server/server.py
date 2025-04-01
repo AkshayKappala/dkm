@@ -4,6 +4,7 @@ import struct
 import pickle
 import hashlib
 import logging
+import time  # Import time for periodic logging
 from server.decryption.aes_decryption import aes_decrypt
 from shared.key_rotation_manager import KeyRotationManager
 
@@ -118,11 +119,10 @@ try:
     logging.info("Starting server at %s:%d", *SERVER_ADDRESS)
     server_socket.bind(SERVER_ADDRESS)
     server_socket.listen(1)
-    logging.info("Server is listening for connections...")
+    logging.info("Server is listening for a connection...")
 
-    while True:  # Keep the server running to accept new connections
-        connection, client_address = server_socket.accept()
-        handle_client_connection(connection, client_address)
+    connection, client_address = server_socket.accept()  # Accept a single connection
+    handle_client_connection(connection, client_address)
 
 except Exception as e:
     logging.error("Error starting server: %s", e)
