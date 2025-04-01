@@ -123,21 +123,15 @@ try:
     server_socket.listen(1)
     logging.info("Server is listening for connections...")
 
-    connection, client_address = server_socket.accept()
-    handle_client_connection(connection, client_address)
+    while True:  # Keep the server running to accept new connections
+        connection, client_address = server_socket.accept()
+        handle_client_connection(connection, client_address)
 
 except Exception as e:
     logging.error("Error starting server: %s", e)
     exit(1)
 
 finally:
-    try:
-        if connection:
-            connection.shutdown(socket.SHUT_RDWR)
-            connection.close()
-            logging.info("Connection closed.")
-    except Exception as e:
-        logging.error("Error closing connection: %s", e)
     try:
         if server_socket:
             server_socket.close()
