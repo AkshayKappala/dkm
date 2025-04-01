@@ -106,3 +106,4 @@ finally:
             logging.info("Server socket closed.")
     except Exception as e:
         logging.error("Error closing server socket: %s", e)
+        

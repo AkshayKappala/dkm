@@ -112,3 +112,4 @@ finally:
             logging.info("Client socket closed.")
     except:
         logging.error("Error closing client socket.")
+        
