@@ -1,4 +1,6 @@
-# Python version 3.11.2
-
-numpy==2.2.4
-scikit-image==0.25.2
+numpy
+scikit-image
+pycryptodome
+opencv-python
+pywavelets
+Pillow
