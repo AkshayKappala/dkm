@@ -101,7 +101,7 @@ def handle_client_connection(client_socket, client_address):
                     break  # Exit the loop and close the connection
 
                 else:
-                    logging.error("Unknown flag received. Closing connection.")
+                    logging.error(f"Unknown flag received: {flag}. Closing connection.")
                     break
 
             except ConnectionError as e:

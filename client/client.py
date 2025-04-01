@@ -91,7 +91,6 @@ try:
             logging.error("Error processing file %s: %s", filename, e)
             continue  # Skip to the next file
 
-    client_socket.sendall(struct.pack('>I', 0))
     logging.info("File transfer complete.")
     
     # Send end-of-transfer signal
