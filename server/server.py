@@ -43,7 +43,7 @@ try:
             if password_length > 0:
                 # Receive the updated password
                 password_bytes = connection.recv(password_length)
-                password = password_bytes.decode('utf-8')  # Decode the password as UTF-8
+                password = password_bytes.decode('utf-8', errors='replace')  # Decode with error handling
                 print(f"Updated password received: {password}")
                 continue  # Skip to the next iteration to process the next file
 
@@ -60,7 +60,7 @@ try:
 
             # Receive the filename
             filename_bytes = connection.recv(filename_length)
-            filename = filename_bytes.decode('utf-8')  # Decode the filename as UTF-8
+            filename = filename_bytes.decode('utf-8', errors='replace')  # Decode with error handling
 
             # Receive the data length
             data_length_bytes = connection.recv(4)

@@ -27,7 +27,7 @@ try:
     print("Connected to server successfully")
     
     # Get all image files to send
-    files_to_send = read_image(sent_directory)  # Use read_image from file_utils
+    files_to_send = sorted(read_image(sent_directory))  # Sort files alphabetically
     if not files_to_send:
         print(f"No valid image files found in directory: {sent_directory}")
         raise Exception("No files to send")
@@ -47,13 +47,13 @@ try:
                 print(f"Key rotated. New key derived from updated password.")
                 
                 # Send the updated password to the server
-                password_bytes = password.encode()
+                password_bytes = password.encode('utf-8')  # Explicitly encode as UTF-8
                 password_length = len(password_bytes)
                 client_socket.sendall(struct.pack('>I', password_length))  # Send password length
                 client_socket.sendall(password_bytes)  # Send password
             
             # Send the filename length
-            filename_bytes = filename.encode()
+            filename_bytes = filename.encode('utf-8')  # Explicitly encode as UTF-8
             filename_length = len(filename_bytes)
             client_socket.sendall(struct.pack('>I', filename_length))
             
