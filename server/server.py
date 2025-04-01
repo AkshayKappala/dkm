@@ -71,25 +71,17 @@ try:
             # Decrypt the received image fragment
             decrypted_data = aes_decrypt(encrypted_data, password)
 
-            # Parse the decrypted data into the expected fragments dictionary
-            # Assuming the decrypted data is serialized, deserialize it here
+            # Deserialize the decrypted data
             try:
-                import pickle
-                fragments = pickle.loads(decrypted_data)
+                data = pickle.loads(decrypted_data)
             except Exception as e:
                 print(f"Error parsing decrypted data: {e}")
                 break
 
-            # Derive the key from the password
-            key = derive_key(password)
-
-            # Reconstruct the image from the decrypted fragments
-            reconstructed_image = reconstruct_image(fragments, key)
-
             # Save the reconstructed image
             file_path = os.path.join(received_directory, filename)
             with open(file_path, 'wb') as received_file:
-                received_file.write(reconstructed_image)
+                received_file.write(data)
 
             print(f"Received and reconstructed image: {filename}")
 

@@ -1,6 +1,7 @@
 import socket
 import os
 import struct
+import pickle  # Add this import
 from client.encryption.aes_encryption import aes_encrypt
 from client.encryption.dwt_processor import process_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
@@ -56,9 +57,12 @@ try:
             
             with open(file_path, 'rb') as file:
                 data = file.read()
-                
-            # Encrypt the data
-            encrypted_data = aes_encrypt(data, password)
+            
+            # Serialize the data
+            serialized_data = pickle.dumps(data)
+            
+            # Encrypt the serialized data
+            encrypted_data = aes_encrypt(serialized_data, password)
             
             # Send the data length
             data_length = len(encrypted_data)
