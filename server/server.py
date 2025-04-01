@@ -27,20 +27,21 @@ def handle_client_connection(client_socket, client_address):
     try:
         while True:
             try:
-                # Receive filename length
-                filename_length_bytes = client_socket.recv(4)
-                if not filename_length_bytes:
-                    logging.info("No filename length received. Closing connection.")
+                # Receive the flag
+                flag = client_socket.recv(1)
+                if not flag:
+                    logging.info("No flag received. Closing connection.")
                     break
 
-                filename_length = int.from_bytes(filename_length_bytes, 'big')
-                if filename_length == 0:
-                    logging.info("No more files to receive. Closing connection.")
-                    break
+                # Handle new key
+                if flag == b'\x01':
+                    key_length_bytes = client_socket.recv(4)
+                    if not key_length_bytes:
+                        logging.info("No key length received. Closing connection.")
+                        break
 
-                # Check if a new key is being sent
-                if filename_length > 0 and filename_length < 256:  # Assuming key length is less than 256 bytes
-                    password_bytes = client_socket.recv(filename_length)
+                    key_length = int.from_bytes(key_length_bytes, 'big')
+                    password_bytes = client_socket.recv(key_length)
                     password = password_bytes.decode('utf-8', errors='replace')
                     logging.info("New key received: %s", password)
 
@@ -48,37 +49,48 @@ def handle_client_connection(client_socket, client_address):
                     client_socket.sendall(b"ACK")
                     continue
 
-                filename_bytes = client_socket.recv(filename_length)
-                filename = filename_bytes.decode('utf-8', errors='replace')
+                # Handle filename
+                elif flag == b'\x02':
+                    filename_length_bytes = client_socket.recv(4)
+                    if not filename_length_bytes:
+                        logging.info("No filename length received. Closing connection.")
+                        break
 
-                # Receive file data length
-                file_data_length_bytes = client_socket.recv(8)
-                if not file_data_length_bytes:
-                    logging.info("No file data length received. Closing connection.")
+                    filename_length = int.from_bytes(filename_length_bytes, 'big')
+                    filename_bytes = client_socket.recv(filename_length)
+                    filename = filename_bytes.decode('utf-8', errors='replace')
+
+                    # Receive file data length
+                    file_data_length_bytes = client_socket.recv(8)
+                    if not file_data_length_bytes:
+                        logging.info("No file data length received. Closing connection.")
+                        break
+
+                    file_data_length = int.from_bytes(file_data_length_bytes, 'big')
+                    file_data = bytearray()
+                    bytes_received = 0
+                    while bytes_received < file_data_length:
+                        chunk = client_socket.recv(min(4096, file_data_length - bytes_received))
+                        if not chunk:
+                            raise ConnectionError("Incomplete data received.")
+                        file_data.extend(chunk)
+                        bytes_received += len(chunk)
+
+                    # Decrypt and deserialize the file
+                    decrypted_data = aes_decrypt(file_data, encryption_key)
+                    data = pickle.loads(decrypted_data)
+
+                    # Save the file
+                    save_path = os.path.join(received_directory, filename)
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    with open(save_path, 'wb') as f:
+                        f.write(data)
+
+                    logging.info(f"File {filename} saved successfully.")
+                    client_socket.sendall(b"ACK")  # Send acknowledgment to client
+                else:
+                    logging.error("Unknown flag received. Closing connection.")
                     break
-
-                file_data_length = int.from_bytes(file_data_length_bytes, 'big')
-                file_data = bytearray()
-                bytes_received = 0
-                while bytes_received < file_data_length:
-                    chunk = client_socket.recv(min(4096, file_data_length - bytes_received))
-                    if not chunk:
-                        raise ConnectionError("Incomplete data received.")
-                    file_data.extend(chunk)
-                    bytes_received += len(chunk)
-
-                # Decrypt and deserialize the file
-                decrypted_data = aes_decrypt(file_data, encryption_key)
-                data = pickle.loads(decrypted_data)
-
-                # Save the file
-                save_path = os.path.join(received_directory, filename)
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                with open(save_path, 'wb') as f:
-                    f.write(data)
-
-                logging.info(f"File {filename} saved successfully.")
-                client_socket.sendall(b"ACK")  # Send acknowledgment to client
 
             except ConnectionError as e:
                 logging.warning(f"Connection error: {e}")

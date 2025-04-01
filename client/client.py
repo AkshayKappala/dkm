@@ -63,8 +63,7 @@ try:
                 logging.info("Rotating key for file: %s", filename)
                 password_bytes = password.encode('utf-8')
                 password_length = len(password_bytes)
-                client_socket.sendall(struct.pack('>I', password_length))
-                client_socket.sendall(password_bytes)
+                client_socket.sendall(b'\x01' + struct.pack('>I', password_length) + password_bytes)
 
                 # Wait for acknowledgment from the server after sending the new key
                 ack = client_socket.recv(3)
@@ -74,8 +73,7 @@ try:
 
             filename_bytes = filename.encode('utf-8')
             filename_length = len(filename_bytes)
-            client_socket.sendall(struct.pack('>I', filename_length))
-            client_socket.sendall(filename_bytes)
+            client_socket.sendall(b'\x02' + struct.pack('>I', filename_length) + filename_bytes)
 
             with open(file_path, 'rb') as file:
                 data = file.read()
