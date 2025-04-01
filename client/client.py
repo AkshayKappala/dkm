@@ -1,129 +1,81 @@
 import socket
 import os
 import struct
-import pickle  # Add this import
-import hashlib  # Add this import for checksum calculation
+import pickle
+import hashlib
 from client.encryption.aes_encryption import aes_encrypt
 from client.encryption.dwt_processor import process_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
 from shared.key_rotation_manager import KeyRotationManager
-from client.utils.file_utils import read_image  # Import read_image from file_utils
+from client.utils.file_utils import read_image
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
 
-# Directory containing files to send
 sent_directory = "sent"
-
-# Create a key rotation manager
 key_rotation_manager = KeyRotationManager()
-
-# Password for encryption
-password = "secure_password"  # In a real app, this would be securely provided
+password = "secure_password"
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 def calculate_checksum(data):
-    """Calculate and return the SHA-256 checksum of the given data."""
     return hashlib.sha256(data).hexdigest()
 
 try:
-    print(f"Connecting to server at {SERVER_ADDRESS}...")
     client_socket.connect(SERVER_ADDRESS)
-    print("Connected to server successfully")
     
-    # Get all image files to send
-    files_to_send = sorted(read_image(sent_directory))  # Sort files alphabetically
+    files_to_send = sorted(read_image(sent_directory))
     if not files_to_send:
-        print(f"No valid image files found in directory: {sent_directory}")
         raise Exception("No files to send")
     
-    # Iterate over files in sorted order
     for filename in files_to_send:
         file_path = os.path.join(sent_directory, filename)
         try:
-            print(f"Processing file: {filename}")
-            
-            # Check if we should rotate the key for this file
             should_rotate, similarity, reason = key_rotation_manager.should_rotate_key(file_path)
             if should_rotate:
-                print(f"Key rotation triggered: {reason}")
-                # Rotate the key by updating the password
                 password = f"{password}_{filename}"
-                print(f"Key rotated. New key derived from updated password.")
-                
-                # Send the updated password to the server
-                password_bytes = password.encode('utf-8')  # Explicitly encode as UTF-8
+                password_bytes = password.encode('utf-8')
                 password_length = len(password_bytes)
-                client_socket.sendall(struct.pack('>I', password_length))  # Send password length
-                client_socket.sendall(password_bytes)  # Send password
+                client_socket.sendall(struct.pack('>I', password_length))
+                client_socket.sendall(password_bytes)
             
-            print(f"[DEBUG] Sending filename: {filename}")
-            # Send the filename length
-            filename_bytes = filename.encode('utf-8')  # Explicitly encode as UTF-8
+            filename_bytes = filename.encode('utf-8')
             filename_length = len(filename_bytes)
             client_socket.sendall(struct.pack('>I', filename_length))
-            
-            # Send the filename
             client_socket.sendall(filename_bytes)
-            print(f"[DEBUG] Filename sent: {filename}")
 
             with open(file_path, 'rb') as file:
                 data = file.read()
-            print(f"[DEBUG] Original file size: {len(data)} bytes")
             
-            # Serialize the data
             serialized_data = pickle.dumps(data)
-            serialized_checksum = calculate_checksum(serialized_data)
-            print(f"[DEBUG] Serialized data size: {len(serialized_data)} bytes, Checksum: {serialized_checksum}")
-
-            # Encrypt the serialized data
             encrypted_data = aes_encrypt(serialized_data, password)
-            encrypted_checksum = calculate_checksum(encrypted_data)
-            print(f"[DEBUG] Encrypted data size: {len(encrypted_data)} bytes, Checksum: {encrypted_checksum}")
             
-            # Send the data length
             data_length = len(encrypted_data)
             client_socket.sendall(struct.pack('>I', data_length))
-            
-            # Send the encrypted data
             client_socket.sendall(encrypted_data)
-            
-            print(f"Sent encrypted file: {filename}")
 
         except Exception as e:
-            print(f"[ERROR] Error sending file {filename}: {e}")
             break
 
-    # Signal the end of files with a filename length of 0
     client_socket.sendall(struct.pack('>I', 0))
-    print("Signaled end of file transmission")
-    
-    # Wait for user input before closing connection
     input("File transfer complete. Press Enter to close the connection...")
     
-    # We can optionally try to receive any closing message from the server
-    print("Closing connection...")
     try:
         client_socket.settimeout(2.0)
         close_msg = client_socket.recv(1024)
         if close_msg == b'CLOSE':
-            print("Received close signal from server")
-            # Optionally send acknowledgment
             try:
                 client_socket.sendall(b'ACK')
             except:
-                pass  # It's okay if this fails
+                pass
     except:
-        pass  # No need to log anything here
+        pass
 
 except Exception as e:
-    print(f"Error during client communication: {e}")
+    pass
 finally:
-    # Ensure proper socket cleanup
     try:
         if client_socket:
             client_socket.shutdown(socket.SHUT_RDWR)
             client_socket.close()
-            print("Connection closed.")
     except:
-        pass  # Socket might already be closed
+        pass

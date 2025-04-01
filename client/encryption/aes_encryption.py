@@ -27,11 +27,6 @@ def aes_encrypt(data, password):
     cipher = AES.new(key, AES.MODE_CBC)
     iv = cipher.iv
     ciphertext = iv + cipher.encrypt(pad(data, AES.block_size))
-
-    # Log checksum of encrypted data
-    checksum = calculate_checksum(ciphertext)
-    print(f"[DEBUG] AES Encryption - IV: {iv.hex()}, Ciphertext Length: {len(ciphertext)}, Checksum: {checksum}")
-
     return ciphertext
 
 def encrypt_image_fragment(fragment, password):
