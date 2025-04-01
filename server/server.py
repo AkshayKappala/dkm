@@ -53,11 +53,15 @@ def handle_client_connection(client_socket, client_address):
                     file_data.extend(chunk)
                     bytes_received += len(chunk)
 
+                # Decrypt and deserialize the file
+                decrypted_data = aes_decrypt(file_data, encryption_key)
+                data = pickle.loads(decrypted_data)
+
                 # Save the file
                 save_path = os.path.join(received_directory, filename)
                 os.makedirs(os.path.dirname(save_path), exist_ok=True)
                 with open(save_path, 'wb') as f:
-                    f.write(file_data)
+                    f.write(data)
 
                 logging.info(f"File {filename} saved successfully.")
                 client_socket.sendall(b"ACK")  # Send acknowledgment to client
