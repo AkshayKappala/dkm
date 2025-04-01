@@ -34,6 +34,20 @@ def handle_client_connection(client_socket, client_address):
                     break
 
                 filename_length = int.from_bytes(filename_length_bytes, 'big')
+                if filename_length == 0:
+                    logging.info("No more files to receive. Closing connection.")
+                    break
+
+                # Check if a new key is being sent
+                if filename_length > 0 and filename_length < 256:  # Assuming key length is less than 256 bytes
+                    password_bytes = client_socket.recv(filename_length)
+                    password = password_bytes.decode('utf-8', errors='replace')
+                    logging.info("New key received: %s", password)
+
+                    # Send acknowledgment for the new key
+                    client_socket.sendall(b"ACK")
+                    continue
+
                 filename_bytes = client_socket.recv(filename_length)
                 filename = filename_bytes.decode('utf-8', errors='replace')
 
@@ -106,4 +120,3 @@ finally:
             logging.info("Server socket closed.")
     except Exception as e:
         logging.error("Error closing server socket: %s", e)
-        

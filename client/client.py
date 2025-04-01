@@ -65,7 +65,13 @@ try:
                 password_length = len(password_bytes)
                 client_socket.sendall(struct.pack('>I', password_length))
                 client_socket.sendall(password_bytes)
-            
+
+                # Wait for acknowledgment from the server after sending the new key
+                ack = client_socket.recv(3)
+                if ack != b"ACK":
+                    logging.error("Failed to receive acknowledgment for key rotation. Aborting.")
+                    break
+
             filename_bytes = filename.encode('utf-8')
             filename_length = len(filename_bytes)
             client_socket.sendall(struct.pack('>I', filename_length))
@@ -112,4 +118,3 @@ finally:
             logging.info("Client socket closed.")
     except:
         logging.error("Error closing client socket.")
-        
