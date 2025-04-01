@@ -70,17 +70,23 @@ try:
                 print(f"Incomplete image fragment received. Expected: {data_length}, Received: {bytes_received}")
                 break
 
+            # Decrypt the received data
             decrypted_data = aes_decrypt(encrypted_data, password)
+            print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
 
             try:
+                # Deserialize the decrypted data
                 data = pickle.loads(decrypted_data)
+                print(f"[DEBUG] Deserialized data size: {len(data)} bytes")
             except Exception as e:
                 print(f"Error parsing decrypted data: {e}")
                 break
 
+            # Save the received file
             file_path = os.path.join(received_directory, filename)
             with open(file_path, 'wb') as received_file:
                 received_file.write(data)
+            print(f"[DEBUG] File saved to: {file_path}")
 
             print(f"Received and reconstructed image: {filename}")
 
