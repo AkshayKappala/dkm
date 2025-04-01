@@ -59,7 +59,7 @@ try:
             logging.info("Key rotation decision for %s: %s (Reason: %s)", filename, should_rotate, reason)
             
             if should_rotate:
-                password = f"{password}_{filename}"
+                password = f"{password}_{filename}"  # Update the password
                 logging.info("Rotating key for file: %s", filename)
                 password_bytes = password.encode('utf-8')
                 password_length = len(password_bytes)
@@ -79,7 +79,7 @@ try:
                 data = file.read()
             
             serialized_data = pickle.dumps(data)
-            encrypted_data = aes_encrypt(serialized_data, password)
+            encrypted_data = aes_encrypt(serialized_data, password)  # Use the updated password
             logging.info("File %s encrypted successfully.", filename)
             
             data_length = len(encrypted_data)

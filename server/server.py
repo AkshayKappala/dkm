@@ -23,6 +23,7 @@ def calculate_checksum(data):
     return hashlib.sha256(data).hexdigest()
 
 def handle_client_connection(client_socket, client_address):
+    global encryption_key  # Ensure the server updates the global encryption key
     logging.info("Connection established with client: %s", client_address)
     try:
         while True:
@@ -42,8 +43,8 @@ def handle_client_connection(client_socket, client_address):
 
                     key_length = int.from_bytes(key_length_bytes, 'big')
                     password_bytes = client_socket.recv(key_length)
-                    password = password_bytes.decode('utf-8', errors='replace')
-                    logging.info("New key received: %s", password)
+                    encryption_key = password_bytes.decode('utf-8', errors='replace')  # Update the encryption key
+                    logging.info("New key received: %s", encryption_key)
 
                     # Send acknowledgment for the new key
                     client_socket.sendall(b"ACK")
@@ -77,7 +78,7 @@ def handle_client_connection(client_socket, client_address):
                         bytes_received += len(chunk)
 
                     # Decrypt and deserialize the file
-                    decrypted_data = aes_decrypt(file_data, encryption_key)
+                    decrypted_data = aes_decrypt(file_data, encryption_key)  # Use the updated encryption key
                     data = pickle.loads(decrypted_data)
 
                     # Save the file
