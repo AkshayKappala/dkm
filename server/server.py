@@ -48,13 +48,9 @@ def handle_client_connection(client_socket, client_address):
             while bytes_received < file_data_length:
                 chunk = client_socket.recv(min(4096, file_data_length - bytes_received))
                 if not chunk:
-                    break
+                    raise ValueError("Incomplete data received.")
                 file_data.extend(chunk)
                 bytes_received += len(chunk)
-
-            if bytes_received != file_data_length:
-                logging.warning("Incomplete data received for file: %s", filename)
-                break
 
             # Save the file
             save_path = os.path.join(received_directory, filename)
@@ -62,6 +58,7 @@ def handle_client_connection(client_socket, client_address):
             with open(save_path, 'wb') as f:
                 f.write(file_data)
 
+            logging.info(f"File {filename} saved successfully.")
             client_socket.sendall(b"ACK")  # Send acknowledgment to client
 
         except Exception as e:

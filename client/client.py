@@ -24,17 +24,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def calculate_checksum(data):
     return hashlib.sha256(data).hexdigest()
 
-def send_file_to_server(server_ip, server_port, file_path):
+def send_file_to_server(server_ip, server_port, file_data):
     try:
-        # Send file and wait for acknowledgment
-        client_socket.sendall(file_path)
+        # Send file data and wait for acknowledgment
+        client_socket.sendall(file_data)
         ack = client_socket.recv(3)
         if ack != b"ACK":
-            logging.warning(f"No acknowledgment received for file {file_path}.")
+            logging.warning("No acknowledgment received.")
         else:
-            logging.info(f"File {file_path} sent successfully.")
+            logging.info("File sent successfully.")
     except Exception as e:
-        logging.error(f"Error sending file {file_path}: {e}")
+        logging.error(f"Error sending file: {e}")
 
 try:
     logging.info("Connecting to server at %s:%d", *SERVER_ADDRESS)
@@ -73,10 +73,8 @@ try:
             logging.info("File %s encrypted successfully.", filename)
             
             data_length = len(encrypted_data)
-            client_socket.sendall(struct.pack('>I', data_length))
-            client_socket.sendall(encrypted_data)
-            
-            send_file_to_server(SERVER_ADDRESS[0], SERVER_ADDRESS[1], file_path)
+            client_socket.sendall(struct.pack('>Q', data_length))  # Use 8 bytes for length
+            send_file_to_server(SERVER_ADDRESS[0], SERVER_ADDRESS[1], encrypted_data)
 
         except Exception as e:
             logging.error("Error processing file %s: %s", filename, e)
