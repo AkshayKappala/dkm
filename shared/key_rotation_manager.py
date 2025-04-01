@@ -58,5 +58,5 @@ class KeyRotationManager:
                 return False, similarity_score, f"Sufficient similarity ({similarity_score:.4f} >= {self.similarity_threshold})"
                 
         except Exception as e:
-            # If there's an error in comparison, don't rotate key
+            self.last_image_path = file_path  # Update last image path
             return False, None, f"Error comparing images: {str(e)}"

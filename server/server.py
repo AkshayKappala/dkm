@@ -75,8 +75,11 @@ try:
 
             try:
                 data = pickle.loads(decrypted_data)
+                if not isinstance(data, bytes):
+                    raise ValueError("Invalid data format")
             except Exception as e:
-                break
+                print(f"Error loading data: {e}")
+                continue
 
             file_path = os.path.join(received_directory, filename)
             with open(file_path, 'wb') as received_file:
@@ -93,17 +96,16 @@ try:
         pass
 
 except Exception as e:
-    pass
+    print(f"Error occurred: {e}")
 finally:
     try:
         if connection:
             connection.shutdown(socket.SHUT_RDWR)
             connection.close()
-    except:
-        pass
-
+    except Exception as e:
+        print(f"Error closing connection: {e}")
     try:
         if server_socket:
             server_socket.close()
-    except:
-        pass
+    except Exception as e:
+        print(f"Error closing server socket: {e}")

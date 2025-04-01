@@ -54,7 +54,8 @@ try:
             client_socket.sendall(encrypted_data)
 
         except Exception as e:
-            break
+            print(f"Error processing file {filename}: {e}")
+            continue  # Skip to the next file
 
     client_socket.sendall(struct.pack('>I', 0))
     input("File transfer complete. Press Enter to close the connection...")

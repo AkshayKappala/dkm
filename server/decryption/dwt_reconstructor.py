@@ -18,6 +18,11 @@ class DWTReconstructor:
         Returns:
             Reconstructed image as a numpy array.
         """
+        required_keys = ['ll2', 'lh2_hl2_hh2', 'lh_hl_hh']
+        for key in required_keys:
+            if key not in fragments:
+                raise ValueError(f"Missing fragment: {key}")
+
         # Combine the fragments to reconstruct the image
         coeffs = [fragments['ll2'], fragments['lh2_hl2_hh2'], fragments['lh_hl_hh']]
         reconstructed_image = pywt.waverec2(coeffs, self.wavelet)

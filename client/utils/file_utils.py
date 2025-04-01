@@ -39,9 +39,11 @@ def is_image_file(file_path):
     return get_file_extension(file_path) in image_extensions
 
 def create_directory(directory):
-    """Create a directory if it does not exist."""
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        print(f"Directory created: {directory}")
-    else:
-        print(f"Directory already exists: {directory}")
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            print(f"Directory created: {directory}")
+        else:
+            print(f"Directory already exists: {directory}")
+    except Exception as e:
+        print(f"Error creating directory {directory}: {e}")
