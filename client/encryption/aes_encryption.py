@@ -17,13 +17,21 @@ def generate_aes_key(password):
     sha256_hash = hashlib.sha256(password.encode()).digest()
     return sha256_hash
 
+def calculate_checksum(data):
+    """Calculate and return the SHA-256 checksum of the given data."""
+    return hashlib.sha256(data).hexdigest()
+
 def aes_encrypt(data, password):
     """Encrypts the given data using AES-256 encryption."""
     key = derive_key(password)
     cipher = AES.new(key, AES.MODE_CBC)
     iv = cipher.iv
     ciphertext = iv + cipher.encrypt(pad(data, AES.block_size))
-    print(f"[DEBUG] AES Encryption - IV: {iv.hex()}, Ciphertext Length: {len(ciphertext)}")
+
+    # Log checksum of encrypted data
+    checksum = calculate_checksum(ciphertext)
+    print(f"[DEBUG] AES Encryption - IV: {iv.hex()}, Ciphertext Length: {len(ciphertext)}, Checksum: {checksum}")
+
     return ciphertext
 
 def encrypt_image_fragment(fragment, password):

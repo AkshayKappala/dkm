@@ -2,6 +2,7 @@ import socket
 import os
 import struct
 import pickle
+import hashlib  # Add this import for checksum calculation
 from server.decryption.aes_decryption import aes_decrypt
 from shared.key_rotation_manager import KeyRotationManager
 
@@ -14,6 +15,10 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 password = "secure_password"
 
 key_rotation_manager = KeyRotationManager()
+
+def calculate_checksum(data):
+    """Calculate and return the SHA-256 checksum of the given data."""
+    return hashlib.sha256(data).hexdigest()
 
 try:
     server_socket.bind(SERVER_ADDRESS)
@@ -86,11 +91,16 @@ try:
                 break
 
             # Log metadata instead of raw binary data
-            print(f"[DEBUG] Encrypted data received. Size: {len(encrypted_data)} bytes")
+            checksum = calculate_checksum(encrypted_data)
+            print(f"[DEBUG] Encrypted data received. Size: {len(encrypted_data)} bytes, Checksum: {checksum}")
 
             print("[DEBUG] Decrypting received data...")
             decrypted_data = aes_decrypt(encrypted_data, password)
             print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
+
+            # Log checksum of decrypted data
+            decrypted_checksum = calculate_checksum(decrypted_data)
+            print(f"[DEBUG] Decrypted data checksum: {decrypted_checksum}")
 
             try:
                 print("[DEBUG] Deserializing decrypted data...")

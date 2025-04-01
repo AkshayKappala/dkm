@@ -1,7 +1,12 @@
 import os
+import hashlib  # Add this import for checksum calculation
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 from shared.crypto_utils import derive_key
+
+def calculate_checksum(data):
+    """Calculate and return the SHA-256 checksum of the given data."""
+    return hashlib.sha256(data).hexdigest()
 
 def aes_decrypt(ciphertext, password):
     """Decrypts the given ciphertext using AES-256 encryption."""
@@ -11,6 +16,11 @@ def aes_decrypt(ciphertext, password):
     print(f"[DEBUG] AES Decryption - IV: {iv.hex()}, Ciphertext Length: {len(ct)}")
     cipher = AES.new(key, AES.MODE_CBC, iv=iv)
     decrypted = unpad(cipher.decrypt(ct), AES.block_size)
+
+    # Log checksum of decrypted data
+    checksum = calculate_checksum(decrypted)
+    print(f"[DEBUG] Decrypted data checksum: {checksum}")
+
     return decrypted
 
 def save_decrypted_image(decrypted_data, output_path):

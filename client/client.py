@@ -2,6 +2,7 @@ import socket
 import os
 import struct
 import pickle  # Add this import
+import hashlib  # Add this import for checksum calculation
 from client.encryption.aes_encryption import aes_encrypt
 from client.encryption.dwt_processor import process_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
@@ -20,6 +21,10 @@ key_rotation_manager = KeyRotationManager()
 password = "secure_password"  # In a real app, this would be securely provided
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+def calculate_checksum(data):
+    """Calculate and return the SHA-256 checksum of the given data."""
+    return hashlib.sha256(data).hexdigest()
 
 try:
     print(f"Connecting to server at {SERVER_ADDRESS}...")
@@ -69,10 +74,18 @@ try:
             # Serialize the data
             serialized_data = pickle.dumps(data)
             print(f"[DEBUG] Serialized data size: {len(serialized_data)} bytes")
-            
+
+            # Log checksum of serialized data
+            serialized_checksum = calculate_checksum(serialized_data)
+            print(f"[DEBUG] Serialized data checksum: {serialized_checksum}")
+
             # Encrypt the serialized data
             encrypted_data = aes_encrypt(serialized_data, password)
             print(f"[DEBUG] Encrypted data size: {len(encrypted_data)} bytes")
+
+            # Log checksum of encrypted data
+            encrypted_checksum = calculate_checksum(encrypted_data)
+            print(f"[DEBUG] Encrypted data checksum: {encrypted_checksum}")
             
             # Send the data length
             data_length = len(encrypted_data)
