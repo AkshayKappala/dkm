@@ -1,6 +1,7 @@
 import socket
 import os
 import struct
+import pickle  # Add this import
 from server.decryption.aes_decryption import aes_decrypt
 from server.decryption.dwt_reconstructor import reconstruct_image
 from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
