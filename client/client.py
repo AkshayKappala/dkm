@@ -52,6 +52,7 @@ try:
                 client_socket.sendall(struct.pack('>I', password_length))  # Send password length
                 client_socket.sendall(password_bytes)  # Send password
             
+            print(f"[DEBUG] Sending filename: {filename}")
             # Send the filename length
             filename_bytes = filename.encode('utf-8')  # Explicitly encode as UTF-8
             filename_length = len(filename_bytes)
@@ -59,16 +60,19 @@ try:
             
             # Send the filename
             client_socket.sendall(filename_bytes)
-            
+            print(f"[DEBUG] Filename sent: {filename}")
+
             with open(file_path, 'rb') as file:
                 data = file.read()
+            print(f"[DEBUG] Original file size: {len(data)} bytes")
             
             # Serialize the data
             serialized_data = pickle.dumps(data)
+            print(f"[DEBUG] Serialized data size: {len(serialized_data)} bytes")
             
             # Encrypt the serialized data
             encrypted_data = aes_encrypt(serialized_data, password)
-            print(f"[DEBUG] Encrypted Data Length: {len(encrypted_data)}")
+            print(f"[DEBUG] Encrypted data size: {len(encrypted_data)} bytes")
             
             # Send the data length
             data_length = len(encrypted_data)

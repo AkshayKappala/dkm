@@ -48,11 +48,13 @@ try:
                 continue  # Skip to the next iteration to process the next file
 
             # Receive the filename length
+            print(f"[DEBUG] Receiving filename length...")
             filename_length_bytes = connection.recv(4)
             if not filename_length_bytes:
                 break  # Connection closed
 
             filename_length = struct.unpack('>I', filename_length_bytes)[0]
+            print(f"[DEBUG] Filename length received: {filename_length}")
 
             if filename_length == 0:
                 print("All files received successfully.")
@@ -61,12 +63,15 @@ try:
             # Receive the filename
             filename_bytes = connection.recv(filename_length)
             filename = filename_bytes.decode('utf-8', errors='replace')  # Decode with error handling
+            print(f"[DEBUG] Filename received: {filename}")
 
             # Receive the data length
+            print(f"[DEBUG] Receiving data length...")
             data_length_bytes = connection.recv(4)
             if not data_length_bytes:
                 break
             data_length = struct.unpack('>I', data_length_bytes)[0]
+            print(f"[DEBUG] Data length received: {data_length}")
 
             # Receive the encrypted image fragment
             encrypted_data = bytearray()
@@ -77,6 +82,7 @@ try:
                     break
                 encrypted_data.extend(chunk)
                 bytes_received += len(chunk)
+            print(f"[DEBUG] Encrypted data received: {len(encrypted_data)} bytes")
 
             if bytes_received != data_length:
                 print(f"[ERROR] Incomplete image fragment received. Expected: {data_length}, Received: {bytes_received}")
@@ -86,10 +92,12 @@ try:
 
             # Decrypt the received image fragment
             decrypted_data = aes_decrypt(encrypted_data, password)
+            print(f"[DEBUG] Decrypted data size: {len(decrypted_data)} bytes")
 
             # Deserialize the decrypted data
             try:
                 data = pickle.loads(decrypted_data)
+                print(f"[DEBUG] Deserialized data size: {len(data)} bytes")
             except Exception as e:
                 print(f"Error parsing decrypted data: {e}")
                 break
