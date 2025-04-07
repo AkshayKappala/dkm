@@ -15,7 +15,6 @@ class KeyRotationManager:
         self.similarity_threshold = similarity_threshold
         self.last_image_path = None
         self.image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif']
-        self.kem = ML_KEM_1024()  # Initialize ML-KEM 1024 for key encapsulation
     
     def is_image_file(self, filename):
         """Check if a file is an image based on its extension."""
@@ -56,8 +55,8 @@ class KeyRotationManager:
             # Determine if key rotation is needed
             if similarity_score < self.similarity_threshold:
                 # Generate a new password using ML-KEM
-                ek, dk = self.kem.keygen()  # Generate keypair (ek, dk)
-                shared_key, ciphertext = self.kem.encaps(ek)  # Encapsulate shared key
+                ek, dk = ML_KEM_1024.keygen()  # Generate keypair (ek, dk)
+                shared_key, ciphertext = ML_KEM_1024.encaps(ek)  # Encapsulate shared key
                 new_password = shared_key.hex()  # Use the shared key as the new password
                 return True, similarity_score, f"Low similarity detected ({similarity_score:.4f} < {self.similarity_threshold})", new_password
             else:
