@@ -2,6 +2,7 @@ import os
 import numpy as np
 from skimage import io
 from ID_MSE import compare_images
+from kyber import Kyber512  # Import Kyber for key encapsulation
 
 class KeyRotationManager:
     def __init__(self, similarity_threshold=0.85):
@@ -14,6 +15,7 @@ class KeyRotationManager:
         self.similarity_threshold = similarity_threshold
         self.last_image_path = None
         self.image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif']
+        self.kyber = Kyber512()  # Initialize Kyber-512 for key encapsulation
     
     def is_image_file(self, filename):
         """Check if a file is an image based on its extension."""
@@ -27,18 +29,18 @@ class KeyRotationManager:
             file_path: Path to the current file
             
         Returns:
-            tuple: (should_rotate, similarity_score or None, reason)
+            tuple: (should_rotate, similarity_score or None, reason, new_password or None)
         """
         filename = os.path.basename(file_path)
         
         # Check if the file is an image
         if not self.is_image_file(filename):
-            return False, None, "Not an image file"
+            return False, None, "Not an image file", None
         
         # If no previous image to compare with
         if self.last_image_path is None:
             self.last_image_path = file_path
-            return False, None, "First image received, no comparison possible"
+            return False, None, "First image received, no comparison possible", None
         
         try:
             # Load images
@@ -53,10 +55,14 @@ class KeyRotationManager:
             
             # Determine if key rotation is needed
             if similarity_score < self.similarity_threshold:
-                return True, similarity_score, f"Low similarity detected ({similarity_score:.4f} < {self.similarity_threshold})"
+                # Generate a new password using Kyber
+                public_key, secret_key = self.kyber.keypair()  # Generate Kyber keypair
+                ciphertext, shared_secret = self.kyber.enc(public_key)  # Encapsulate shared secret
+                new_password = shared_secret.hex()  # Use the shared secret as the new password
+                return True, similarity_score, f"Low similarity detected ({similarity_score:.4f} < {self.similarity_threshold})", new_password
             else:
-                return False, similarity_score, f"Sufficient similarity ({similarity_score:.4f} >= {self.similarity_threshold})"
+                return False, similarity_score, f"Sufficient similarity ({similarity_score:.4f} >= {self.similarity_threshold})", None
                 
         except Exception as e:
             self.last_image_path = file_path  # Update last image path
-            return False, None, f"Error comparing images: {str(e)}"
+            return False, None, f"Error comparing images: {str(e)}", None
