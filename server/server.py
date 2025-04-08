@@ -12,7 +12,7 @@ from shared.key_rotation_manager import KeyRotationManager
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 SERVER_ADDRESS = ('192.168.141.10', 12345)
-received_directory = "received_files"
+received_directory = "received_files_dkm"
 os.makedirs(received_directory, exist_ok=True)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
