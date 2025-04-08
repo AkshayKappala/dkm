@@ -5,7 +5,7 @@ from ID_MSE import compare_images
 from kyber_py.ml_kem import ML_KEM_1024  # Import ML-KEM 1024 for key encapsulation
 
 class KeyRotationManager:
-    def __init__(self, similarity_threshold=0.85):
+    def __init__(self, similarity_threshold=0.92):
         """
         Initialize the key rotation manager.
         
