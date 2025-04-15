@@ -26,6 +26,9 @@ def handle_client_connection(client_socket, client_address):
     try:
         # Receive the encryption key
         key_length_bytes = client_socket.recv(4)
+        if not key_length_bytes:
+            logging.error("No key length received. Closing connection.")
+            return
         key_length = int.from_bytes(key_length_bytes, 'big')
         encryption_key = client_socket.recv(key_length).decode('utf-8')
         logging.info("Encryption key received: %s", encryption_key)
@@ -44,6 +47,10 @@ def handle_client_connection(client_socket, client_address):
 
                 # Receive file data length
                 file_data_length_bytes = client_socket.recv(8)
+                if not file_data_length_bytes:
+                    logging.info("No file data length received. Closing connection.")
+                    break
+
                 file_data_length = int.from_bytes(file_data_length_bytes, 'big')
                 file_data = bytearray()
                 bytes_received = 0

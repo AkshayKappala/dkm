@@ -16,6 +16,7 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Increase socket buffer size
 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65536)  # Set send buffer size to 64KB
 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)  # Set receive buffer size to 64KB
+client_socket.settimeout(5)  # Set a 5-second timeout for socket operations
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,10 +32,16 @@ def send_file_to_server(file_data, retries=3):
                 total_sent += sent
             ack = client_socket.recv(3)
             if ack == b"ACK":
+                logging.info("Acknowledgment received for file.")
                 return True
-        except Exception:
-            if attempt == retries - 1:
-                return False
+            else:
+                logging.warning("Unexpected acknowledgment received. Retrying...")
+        except socket.timeout:
+            logging.error("Timeout occurred while sending file. Retrying...")
+        except Exception as e:
+            logging.error(f"Error sending file: {e}")
+        logging.warning("Retrying file transfer (Attempt %d/%d)...", attempt + 1, retries)
+    return False
 
 try:
     logging.info("Connecting to server at %s:%d", *SERVER_ADDRESS)
@@ -70,7 +77,8 @@ try:
             data_length = len(encrypted_data)
             client_socket.sendall(struct.pack('>Q', data_length))  # Use 8 bytes for length
             if not send_file_to_server(encrypted_data):
-                break  # Stop processing if file sending fails
+                logging.error("Failed to send file %s after retries. Skipping...", filename)
+                continue
 
         except Exception as e:
             logging.error("Error processing file %s: %s", filename, e)
@@ -86,5 +94,5 @@ finally:
             client_socket.shutdown(socket.SHUT_RDWR)
             client_socket.close()
             logging.info("Client socket closed.")
-    except:
-        logging.error("Error closing client socket.")
+    except Exception as e:
+        logging.error("Error closing client socket: %s", e)
