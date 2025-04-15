@@ -6,7 +6,7 @@ import logging
 from client.encryption.aes_encryption import aes_encrypt
 from client.utils.file_utils import read_image
 
-SERVER_ADDRESS = ('192.168.233.128', 12345)
+SERVER_ADDRESS = ('192.168.233.129', 12345)
 
 sent_directory = "sent"
 password = "secure_password"

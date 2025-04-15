@@ -10,7 +10,7 @@ from shared.crypto_utils import derive_key, sha256_hash, sha512_hash
 from shared.key_rotation_manager import KeyRotationManager
 from client.utils.file_utils import read_image
 
-SERVER_ADDRESS = ('192.168.233.128', 12345)
+SERVER_ADDRESS = ('192.168.233.129', 12345)
 
 sent_directory = "sent"
 key_rotation_manager = KeyRotationManager()
