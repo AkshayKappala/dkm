@@ -14,6 +14,10 @@ os.makedirs(received_directory, exist_ok=True)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+# Increase socket buffer size
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65536)  # Set send buffer size to 64KB
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)  # Set receive buffer size to 64KB
+
 encryption_key = None  # Key will be received once at the beginning
 
 def handle_client_connection(client_socket, client_address):

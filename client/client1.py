@@ -13,13 +13,23 @@ password = "secure_password"
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+# Increase socket buffer size
+client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65536)  # Set send buffer size to 64KB
+client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)  # Set receive buffer size to 64KB
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def send_file_to_server(file_data, retries=3):
     for attempt in range(retries):
         try:
-            client_socket.sendall(file_data)
+            total_sent = 0
+            chunk_size = 65536  # Match the buffer size
+            while total_sent < len(file_data):
+                sent = client_socket.send(file_data[total_sent:total_sent + chunk_size])
+                if sent == 0:
+                    raise RuntimeError("Socket connection broken")
+                total_sent += sent
             ack = client_socket.recv(3)
             if ack == b"ACK":
                 logging.info("File sent successfully.")
