@@ -24,24 +24,16 @@ def send_file_to_server(file_data, retries=3):
     for attempt in range(retries):
         try:
             total_sent = 0
-            chunk_size = 65536  # Match the buffer size
             while total_sent < len(file_data):
-                sent = client_socket.send(file_data[total_sent:total_sent + chunk_size])
+                sent = client_socket.send(file_data[total_sent:total_sent + 65536])  # Match buffer size
                 if sent == 0:
                     raise RuntimeError("Socket connection broken")
                 total_sent += sent
             ack = client_socket.recv(3)
             if ack == b"ACK":
-                logging.info("File sent successfully.")
                 return True
-            else:
-                logging.warning("No acknowledgment received. Retrying...")
-        except Exception as e:
-            logging.error(f"Error sending file: {e}")
-            if attempt < retries - 1:
-                logging.info("Retrying...")
-            else:
-                logging.error("Max retries reached. Aborting.")
+        except Exception:
+            if attempt == retries - 1:
                 return False
 
 try:

@@ -48,7 +48,7 @@ def handle_client_connection(client_socket, client_address):
                 file_data = bytearray()
                 bytes_received = 0
                 while bytes_received < file_data_length:
-                    chunk = client_socket.recv(min(4096, file_data_length - bytes_received))
+                    chunk = client_socket.recv(min(65536, file_data_length - bytes_received))  # Match buffer size
                     if not chunk:
                         raise ConnectionError("Incomplete data received.")
                     file_data.extend(chunk)
