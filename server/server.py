@@ -11,7 +11,7 @@ from shared.key_rotation_manager import KeyRotationManager
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-SERVER_ADDRESS = ('192.168.141.10', 12345)
+SERVER_ADDRESS = ('192.168.233.128', 12345)
 received_directory = "received_files_dkm"
 os.makedirs(received_directory, exist_ok=True)
 
